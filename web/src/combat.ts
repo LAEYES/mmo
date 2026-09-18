@@ -20,3 +20,10 @@ function enemyTurn(state:CombatState):CombatState{
  return {...state,player:{...state.player,hp:playerHp},turn:'player',log:[...state.log,`${state.enemy.name} deals ${dealt} damage.`]};
 }
 export function getCombatReward(state:CombatState):number{return state.status==='victory'?25+state.enemy.level*10:0;}
+
+export function getCombatSummary(state:CombatState):{rounds:number;damageTaken:number;damageDealt:number} {
+ const damageDealt=Math.max(0,state.enemy.maxHp-state.enemy.hp);
+ const damageTaken=Math.max(0,state.player.maxHp-state.player.hp);
+ const rounds=state.log.filter(entry=>entry.startsWith('You deal ')).length;
+ return {rounds,damageTaken,damageDealt};
+}
