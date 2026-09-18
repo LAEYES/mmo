@@ -77,6 +77,25 @@ export function normalizePlayer(input:Partial<PlayerState>):PlayerState {
     lastDiscovery:typeof input.lastDiscovery==='string'?input.lastDiscovery.slice(0,200):s.lastDiscovery,
     arenaWins:typeof input.arenaWins==='number'&&Number.isFinite(input.arenaWins)?Math.max(0,Math.floor(input.arenaWins)):s.arenaWins,equippedCardId:equipped,fusionMaterials};
 }
+export function validatePlayerState(state:PlayerState):string[] {
+  const errors:string[]=[];
+  if(!state.name.trim()) errors.push('player name is empty');
+  if(!Number.isInteger(state.level)||state.level<1) errors.push('player level is invalid');
+  if(!Number.isInteger(state.xp)||state.xp<0) errors.push('player XP is invalid');
+  if(!Number.isInteger(state.fusionMaterials)||state.fusionMaterials<0) errors.push('fusion materials are invalid');
+  const ids=new Set<string>();
+  for(const card of state.cards){
+    if(ids.has(card.id)) errors.push('duplicate card id: '+card.id);
+    ids.add(card.id);
+    if(!card.name.trim()) errors.push('card name is empty: '+card.id);
+    if(!rarityOrder.includes(card.rarity)) errors.push('invalid card rarity: '+card.id);
+    if(!Number.isInteger(card.level)||card.level<1) errors.push('invalid card level: '+card.id);
+    if(!Number.isInteger(card.xp)||card.xp<0) errors.push('invalid card XP: '+card.id);
+  }
+  if(state.equippedCardId!==null&&!ids.has(state.equippedCardId)) errors.push('equipped card is missing');
+  return errors;
+}
+export function isValidPlayerState(state:PlayerState):boolean { return validatePlayerState(state).length===0; }
 export function savePlayer(state:PlayerState):void { localStorage.setItem(STORAGE_KEY,JSON.stringify(normalizePlayer(state))); }
 export function clearPlayerSave():void { localStorage.removeItem(STORAGE_KEY); }
 
