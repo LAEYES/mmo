@@ -6,14 +6,16 @@ export type Card = {
   power: number; defense: number; vitality: number; xp: number; level: number;
 };
 
-export type Quest = { id: string; title: string; description: string; progress: number; target: number; completed: boolean; rewardClaimed: boolean; };\n\nexport type PlayerState = {
+export type Quest = { id: string; title: string; description: string; progress: number; target: number; completed: boolean; rewardClaimed: boolean; };
+
+export type PlayerState = {
   name: string; level: number; xp: number; faction: Faction; victories: number; cards: Card[];
-  zoneId: string; explorationCount: number; lastDiscovery: string; arenaWins: number; equippedCardId: string | null; fusionMaterials: number; quests: Quest[];
+  zoneId: string; explorationCount: number; lastDiscovery: string; arenaWins: number; equippedCardId: string | null; fusionMaterials: number; quests: Quest[]; worldThreat: number; worldResources: number;
 };
 
 export const factions: Faction[] = ['Aegis', 'Nomads', 'Eclipse'];
 export function createStarterPlayer(name = 'Arena Player'): PlayerState {
-  return { name, level:1, xp:0, faction:'Aegis', victories:0, cards:[], zoneId:'outpost', explorationCount:0, lastDiscovery:'', arenaWins:0, equippedCardId:null,fusionMaterials:0,quests:[{id:'explore-1',title:'Frontier Survey',description:'Explore the frontier and discover 3 locations.',progress:0,target:3,completed:false,rewardClaimed:false}] };
+  return { name, level:1, xp:0, faction:'Aegis', victories:0, cards:[], zoneId:'outpost', explorationCount:0, lastDiscovery:'', arenaWins:0, equippedCardId:null,fusionMaterials:0,quests:[{id:'explore-1',title:'Frontier Survey',description:'Explore the frontier and discover 3 locations.',progress:0,target:3,completed:false,rewardClaimed:false}],worldThreat:1,worldResources:0 };
 }
 function cardStats(wins:number, rarity:CardRarity):Omit<Card,'id'|'name'> {
   const m=rarity==='Legendary'?4:rarity==='Epic'?3:rarity==='Rare'?2:1;
@@ -49,6 +51,19 @@ export function applyPoiReward(state: PlayerState, action: 'explore' | 'loot' | 
     explorationCount: action === 'explore' ? state.explorationCount + 1 : state.explorationCount,
     fusionMaterials: state.fusionMaterials + materialsGain + (completedNow ? 3 : 0),
     quests: questState.quests.map(q => q.id === 'explore-1' && completedNow ? { ...q, rewardClaimed: true } : q)
+  };
+}
+
+export function applyScenarioChoice(state: PlayerState, choiceIndex: number): PlayerState {
+  const risk = choiceIndex === 0;
+  const xpGain = risk ? 10 : 5;
+  const xp = state.xp + xpGain;
+  return {
+    ...state,
+    xp,
+    level: 1 + Math.floor(xp / 100),
+    worldThreat: Math.max(1, state.worldThreat + (risk ? 1 : -1)),
+    worldResources: Math.max(0, state.worldResources + (risk ? 1 : 2))
   };
 }
 
@@ -111,6 +126,8 @@ export function validatePlayerState(state:PlayerState):string[] {
   if(!Number.isInteger(state.level)||state.level<1) errors.push('player level is invalid');
   if(!Number.isInteger(state.xp)||state.xp<0) errors.push('player XP is invalid');
   if(!Number.isInteger(state.fusionMaterials)||state.fusionMaterials<0) errors.push('fusion materials are invalid');
+  if(!Number.isInteger(state.worldThreat)||state.worldThreat<1) errors.push('world threat is invalid');
+  if(!Number.isInteger(state.worldResources)||state.worldResources<0) errors.push('world resources are invalid');
   const ids=new Set<string>();
   for(const card of state.cards){
     if(ids.has(card.id)) errors.push('duplicate card id: '+card.id);
@@ -124,7 +141,11 @@ export function validatePlayerState(state:PlayerState):string[] {
   return errors;
 }
 export function isValidPlayerState(state:PlayerState):boolean { return validatePlayerState(state).length===0; }
-export function savePlayer(state:PlayerState):void {\n  const normalized=normalizePlayer(state);\n  if(!isValidPlayerState(normalized)) return;\n  localStorage.setItem(STORAGE_KEY,JSON.stringify(normalized));\n}
+export function savePlayer(state:PlayerState):void {
+  const normalized=normalizePlayer(state);
+  if(!isValidPlayerState(normalized)) return;
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(normalized));
+}
 export function clearPlayerSave():void { localStorage.removeItem(STORAGE_KEY); }
 
 const rarityOrder: CardRarity[] = ['Common','Rare','Epic','Legendary'];
