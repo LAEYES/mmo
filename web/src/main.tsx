@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import './styles.css';
 import { canEnterZone, canWalkTile, explore, findTilePath, getNearestPoi, interactWithPoi, getReachableZones, getZone, getZoneStatus, getTile, moveTile, zones } from './world';
 import { createEncounter, getCombatReward, getCombatSummary, playerAttack, type CombatState } from './combat';
-import { equipCard, factions, fuseCards, getCardFusionCost, getEquippedCard, grantArenaReward, loadPlayer, savePlayer, upgradeCard, type Faction } from './game';
+import { equipCard, factions, fuseCards, getCardFusionCost, getEquippedCard, grantArenaReward, applyPoiReward, loadPlayer, savePlayer, upgradeCard, type Faction } from './game';
 
 function WorldCanvas({ zoneId, waypoint, onTileMove }: { zoneId: string; waypoint: {x:number;y:number}|null; onTileMove: (tileX: number, tileY: number) => void }) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -119,7 +119,7 @@ function App() {
     if (path.length <= 1) {
       setAutoMove(false);
       setPathLength(0);
-      const poi = getNearestPoi(currentZone, worldTile);\n      if (poi && poi.distance === 0) { const interaction=interactWithPoi(currentZone,poi.index); if(interaction){setPoiMessage('POI reached: '+interaction.name);setPoiAction(interaction.action);}}\n      setWorldMessage('Waypoint reached.');
+      const poi = getNearestPoi(currentZone, worldTile);\n      if (poi && poi.distance === 0) { const interaction=interactWithPoi(currentZone,poi.index); if(interaction){setPoiMessage('POI reached: '+interaction.name);setPoiAction(interaction.action); update(applyPoiReward(player,interaction.action));}}\n      setWorldMessage('Waypoint reached.');
       return;
     }
     const timer = window.setTimeout(() => {
