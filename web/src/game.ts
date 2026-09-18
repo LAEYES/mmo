@@ -10,6 +10,15 @@ function cardStats(wins:number,rarity:CardRarity):Omit<Card,'id'|'name'>{const m
 export function grantVictory(state:PlayerState):PlayerState{const victories=state.victories+1,xp=state.xp+25,level=1+Math.floor(xp/100),rarity:CardRarity=victories%10===0?'Epic':victories%5===0?'Rare':'Common',card:Card={id:`victory-${victories}`,name:`Arena Card #${victories}`,...cardStats(victories,rarity)};return{...state,victories,xp,level,cards:[...state.cards,card]};}
 export function updatePoiQuests(state:PlayerState,action:'explore'|'loot'|'encounter'):PlayerState{return{...state,quests:state.quests.map(q=>{if(q.completed||q.id!=='explore-1'||action!=='explore')return q;const progress=Math.min(q.target,q.progress+1);return{...q,progress,completed:progress>=q.target};})};}
 export function applyPoiReward(state:PlayerState,action:'explore'|'loot'|'encounter'):PlayerState{const xp=state.xp+(action==='explore'?15:action==='loot'?10:20),questState=updatePoiQuests(state,action),completedNow=questState.quests.some(q=>q.id==='explore-1'&&q.completed&&!q.rewardClaimed);return{...state,xp,level:1+Math.floor(xp/100),explorationCount:action==='explore'?state.explorationCount+1:state.explorationCount,fusionMaterials:state.fusionMaterials+(action==='loot'?1:0)+(completedNow?3:0),quests:questState.quests.map(q=>q.id==='explore-1'&&completedNow?{...q,rewardClaimed:true}:q)};}
+export function applyWorldEventState(state: PlayerState, effect: 'threat' | 'resources' | 'encounter', intensity: number): PlayerState {
+  const power = Math.max(1, Math.floor(intensity));
+  return {
+    ...state,
+    worldThreat: effect === 'threat' ? state.worldThreat + power : effect === 'resources' ? Math.max(1, state.worldThreat - Math.max(1, Math.floor(power / 2))) : state.worldThreat + 1,
+    worldResources: effect === 'resources' ? state.worldResources + power : effect === 'encounter' ? Math.max(0, state.worldResources + Math.max(0, power - 2)) : state.worldResources
+  };
+}
+
 export function applyScenarioChoice(state:PlayerState,choiceIndex:number):PlayerState{
   const risk=choiceIndex===0;
   const xpGain=risk?10:5;
