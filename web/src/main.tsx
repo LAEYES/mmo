@@ -6,6 +6,19 @@ import { createEncounter, getCombatReward, getCombatSummary, playerAttack, type 
 import { equipCard, factions, fuseCards, getCardFusionCost, getEquippedCard, grantArenaReward, loadPlayer, savePlayer, upgradeCard, type Faction } from './game';
 
 function WorldCanvas({ zoneId }: { zoneId: string }) {
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas) return;
+    const onPointer = (event: PointerEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      canvas.dispatchEvent(new CustomEvent('world-tile-click', { detail: { x, y, tileX: Math.floor(x / 32), tileY: Math.floor(y / 32) } }));
+    };
+    canvas.addEventListener('pointerdown', onPointer);
+    return () => canvas.removeEventListener('pointerdown', onPointer);
+  }, []);
+  const
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const canvas = ref.current;
