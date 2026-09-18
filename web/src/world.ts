@@ -108,3 +108,29 @@ export function getNearestPoi(zone: Zone, position: TilePosition): { name: strin
     return distance < nearest.distance ? { name, index, distance } : nearest;
   }, { name: zone.pointsOfInterest[0], index: 0, distance: Number.POSITIVE_INFINITY });
 }
+
+export function findTilePath(start: TilePosition, target: TilePosition, maxSteps = 120): TilePosition[] {
+  if (start.x === target.x && start.y === target.y) return [start];
+  const key = (p: TilePosition) => p.x + ':' + p.y;
+  const queue: TilePosition[] = [start];
+  const previous = new Map<string, TilePosition | null>([[key(start), null]]);
+  const directions = [{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}];
+  while (queue.length) {
+    const current = queue.shift()!;
+    if (Math.abs(current.x-start.x)+Math.abs(current.y-start.y) > maxSteps) continue;
+    for (const direction of directions) {
+      const next = { x: current.x + direction.x, y: current.y + direction.y };
+      const nextKey = key(next);
+      if (previous.has(nextKey) || !canWalkTile(next.x, next.y)) continue;
+      previous.set(nextKey, current);
+      if (next.x === target.x && next.y === target.y) {
+        const path: TilePosition[] = [next];
+        let cursor: TilePosition | null = current;
+        while (cursor) { path.unshift(cursor); cursor = previous.get(key(cursor)) ?? null; }
+        return path;
+      }
+      queue.push(next);
+    }
+  }
+  return [];
+}
