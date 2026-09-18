@@ -252,6 +252,11 @@ export function getFactionPressureLabel(pressure: FactionPressure): string {
 }
 
 export type WorldEvent = { id: string; title: string; description: string; zoneId: string; faction: Zone['faction']; intensity: number; effect: 'threat' | 'resources' | 'encounter'; duration: number; };
+export function getWorldEventPoint(event: WorldEvent): { x: number; y: number } {
+  const seed = event.id.split(':').reduce((sum, part) => sum + Array.from(part).reduce((value, char) => value + char.charCodeAt(0), 0), 0);
+  return { x: 4 + (seed % 52), y: 4 + (Math.floor(seed / 52) % 32) };
+}
+
 export function getWorldEventLifetime(event: WorldEvent): number {
   return Math.max(1, 6 - event.intensity);
 }
