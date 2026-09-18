@@ -59,6 +59,13 @@ namespace RPGQGMMO
         public string PlayerName { get { return playerName; } }
         public int Experience { get { return PlayerPrefs.GetInt("RPGQG_XP", 0); } }
 
+        public void GrantGameplayReward(int baseXp)
+        {
+            int reward = Mathf.Max(1, Mathf.RoundToInt(baseXp * 1f));
+            GrantExperience(reward);
+            NotifyStateChanged("reward:xp:" + reward);
+        }
+
         [Header("Persistence")]
         public bool autosaveState = true;
         public float saveInterval = 10f;
