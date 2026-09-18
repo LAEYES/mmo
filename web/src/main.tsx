@@ -1,7 +1,7 @@
 import { StrictMode, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
-import { canEnterZone, canWalkTile, explore, findTilePath, getNearestPoi, interactWithPoi, getReachableZones, getZone, getZoneStatus, generateScenario, generateWorldEvent, getZoneDynamicModifiers, getZoneEnvironment, getTile, moveTile, zones } from './world';
+import { canEnterZone, canWalkTile, explore, findTilePath, getNearestPoi, interactWithPoi, getReachableZones, getZone, getZoneStatus, generateScenario, generateWorldEvent, getZoneDynamicModifiers, getZoneEnvironment, getZoneNpcs, getTile, moveTile, zones } from './world';
 import { createEncounter, getCombatReward, getCombatSummary, playerAttack, type CombatState } from './combat';
 import { equipCard, factions, fuseCards, getCardFusionCost, getEquippedCard, grantArenaReward, applyPoiReward, applyScenarioChoice, applyCombatOutcome, applyWorldEventState, loadPlayer, savePlayer, upgradeCard, type Faction } from './game';
 
@@ -50,6 +50,7 @@ function WorldCanvas({ zoneId, waypoint, worldThreat, worldResources, exploratio
       }
       const zone=getZone(zoneId);
       const environment=getZoneEnvironment(zone,worldThreat,worldResources,explorationCount);
+      const npcs=getZoneNpcs(zone,worldThreat,worldResources,explorationCount);
       const cycleAlpha={dawn:.10,day:0,dusk:.13,night:.24}[environment.cycle];
       if(cycleAlpha){ctx.fillStyle=`rgba(12,20,48,${cycleAlpha})`;ctx.fillRect(0,0,rect.width,rect.height);}
       if(environment.weather==='mist'){ctx.fillStyle='rgba(190,210,225,.07)';ctx.fillRect(0,0,rect.width,rect.height);}
@@ -98,6 +99,7 @@ function WorldCanvas({ zoneId, waypoint, worldThreat, worldResources, exploratio
         ctx.fillStyle='#9db4e8'; ctx.beginPath(); ctx.arc(x,y,7,0,Math.PI*2); ctx.fill();
         ctx.fillStyle='#c9d7f5'; ctx.font='11px Inter,sans-serif'; ctx.fillText(name,x+10,y+4);
       });
+      npcs.forEach((npc)=>{const sx=(npc.x-cameraX)*tile+tile/2,sy=(npc.y-cameraY)*tile+tile/2;if(sx<0||sy<0||sx>rect.width||sy>rect.height)return;ctx.fillStyle=npc.faction==='Aegis'?'#8fa9e8':npc.faction==='Nomads'?'#d8b56a':'#ad8ee8';ctx.beginPath();ctx.arc(sx,sy,6,0,Math.PI*2);ctx.fill();ctx.fillStyle='#e5ebfa';ctx.font='9px Inter,sans-serif';ctx.fillText(npc.activity.toUpperCase(),sx+8,sy+3);});
       const px=(position.current.x-cameraX)*tile+tile/2, py=(position.current.y-cameraY)*tile+tile/2;
       ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(px,py,9,0,Math.PI*2); ctx.fill();
       ctx.strokeStyle='#9db4e8'; ctx.stroke(); ctx.fillStyle='#c9d7f5'; ctx.font='600 11px Inter,sans-serif'; ctx.fillText('PLAYER',px-22,py+24);
@@ -145,6 +147,7 @@ function App() {
   const chooseFaction = (faction: Faction) => update({ ...player, faction });
   const currentZone = getZone(player.zoneId);
   const environment = getZoneEnvironment(currentZone, player.worldThreat, player.worldResources, player.explorationCount);
+  const zoneNpcs = getZoneNpcs(currentZone, player.worldThreat, player.worldResources, player.explorationCount);
   const environmentLabels = { dawn: 'Aube', day: 'Jour', dusk: 'Crépuscule', night: 'Nuit' } as const;
   const weatherLabels = { clear: 'Clair', mist: 'Brume', storm: 'Tempête', frost: 'Gel' } as const;
   const equipped = getEquippedCard(player);
