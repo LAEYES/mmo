@@ -5,6 +5,8 @@ import { factions, grantVictory, loadPlayer, savePlayer, type Faction } from './
 
 function App() {
   const [player, setPlayer] = useState(loadPlayer);
+  const [name, setName] = useState(player.name === 'Arena Player' ? '' : player.name);
+  const [creating, setCreating] = useState(player.name === 'Arena Player');
 
   const update = (next: typeof player) => {
     setPlayer(next);
@@ -13,6 +15,25 @@ function App() {
 
   const chooseFaction = (faction: Faction) => update({ ...player, faction });
   const victory = () => update(grantVictory(player));
+
+  if (creating) {
+    return (
+      <main className="shell">
+        <header className="header">
+          <div><span className="eyebrow">FREEDOMARENA × RPGQG CARDS</span><h1>Web Arena</h1></div>
+          <span className="status">Playable foundation</span>
+        </header>
+        <section className="hero">
+          <div><span className="eyebrow">PLAYER CREATION</span><h2>Enter the Arena</h2><p>Create your player before choosing a faction and exploring the world.</p></div>
+          <form onSubmit={(event) => { event.preventDefault(); const trimmed = name.trim(); if (!trimmed) return; update({ ...player, name: trimmed }); setCreating(false); }}>
+            <label htmlFor="player-name">Player name</label>
+            <input id="player-name" value={name} onChange={(event) => setName(event.target.value)} maxLength={24} autoFocus placeholder="Arena Player" />
+            <button type="submit" disabled={!name.trim()}>Create player</button>
+          </form>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="shell">
