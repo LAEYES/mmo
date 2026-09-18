@@ -10,7 +10,8 @@ function App() {
   const [name, setName] = useState(player.name === 'Arena Player' ? '' : player.name);
   const [creating, setCreating] = useState(player.name === 'Arena Player');
   const [combat, setCombat] = useState<CombatState | null>(null);
-  const [lastCardXp, setLastCardXp] = useState(0);\n  const [fusionSourceId, setFusionSourceId] = useState<string | null>(null);
+  const [lastCardXp, setLastCardXp] = useState(0);
+  const [fusionSourceId, setFusionSourceId] = useState<string | null>(null);
   const update = (next: typeof player) => { setPlayer(next); savePlayer(next); };
   const chooseFaction = (faction: Faction) => update({ ...player, faction });
   const currentZone = getZone(player.zoneId);
