@@ -17,15 +17,80 @@ namespace RPGQGMMO
         public int obstacleCount = 18;
         public int enemyCount = 6;
         public bool generateOnStart = true;
+        public bool autoEvolve = true;
+        public float evolutionInterval = 45f;
+        public float mutationRate = 0.18f;
+        public int generation = 0;
+        public int maxGenerations = 1000;
+        public int playerDeaths;
+        public int enemiesDefeated;
 
         [Header("Gameplay")]
         public Vector3 playerSpawn = new Vector3(0f, 1f, 0f);
 
         private System.Random random;
+        private float nextEvolution;
+        private RPGQGMMOBridge bridge;
 
         private void Start()
         {
+            bridge = FindObjectOfType<RPGQGMMOBridge>();
+            if (bridge != null) bridge.StateChanged += OnGameState;
+            LoadEvolutionState();
             if (generateOnStart) Generate();
+            nextEvolution = Time.time + evolutionInterval;
+        }
+
+        private void Update()
+        {
+            if (!autoEvolve || Time.time < nextEvolution) return;
+            nextEvolution = Time.time + Mathf.Max(10f, evolutionInterval);
+            Evolve();
+        }
+
+        private void OnDestroy()
+        {
+            if (bridge != null) bridge.StateChanged -= OnGameState;
+        }
+
+        private void OnGameState(string state)
+        {
+            if (state == "player:dead") playerDeaths++;
+            else if (state.StartsWith("quest:defeat-spectre")) enemiesDefeated++;
+        }
+
+        [ContextMenu("Evolve FreedomArena")]
+        public void Evolve()
+        {
+            generation = Mathf.Min(maxGenerations, generation + 1);
+            float pressure = Mathf.Clamp01((playerDeaths * 0.08f) - (enemiesDefeated * 0.015f));
+            float adaptation = Mathf.Clamp(1f + pressure + Random.Range(-mutationRate, mutationRate), 0.7f, 1.8f);
+            obstacleCount = Mathf.Clamp(Mathf.RoundToInt(obstacleCount * adaptation), 8, 60);
+            enemyCount = Mathf.Clamp(Mathf.RoundToInt(enemyCount * adaptation), 2, 24);
+            seed = unchecked(seed * 1103515245 + 12345 + generation * 97);
+            SaveEvolutionState();
+            Generate();
+        }
+
+        private void SaveEvolutionState()
+        {
+            PlayerPrefs.SetInt("FA_GEN", generation);
+            PlayerPrefs.SetInt("FA_SEED", seed);
+            PlayerPrefs.SetInt("FA_OBS", obstacleCount);
+            PlayerPrefs.SetInt("FA_ENEMIES", enemyCount);
+            PlayerPrefs.SetInt("FA_DEATHS", playerDeaths);
+            PlayerPrefs.SetInt("FA_KILLS", enemiesDefeated);
+            PlayerPrefs.Save();
+        }
+
+        private void LoadEvolutionState()
+        {
+            generation = PlayerPrefs.GetInt("FA_GEN", 0);
+            seed = PlayerPrefs.GetInt("FA_SEED", seed);
+            obstacleCount = PlayerPrefs.GetInt("FA_OBS", obstacleCount);
+            enemyCount = PlayerPrefs.GetInt("FA_ENEMIES", enemyCount);
+            playerDeaths = PlayerPrefs.GetInt("FA_DEATHS", 0);
+            enemiesDefeated = PlayerPrefs.GetInt("FA_KILLS", 0);
         }
 
         [ContextMenu("Generate FreedomArena")]
