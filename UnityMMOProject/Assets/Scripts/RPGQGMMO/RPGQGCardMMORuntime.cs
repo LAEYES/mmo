@@ -39,6 +39,7 @@ namespace RPGQGMMO
         private int defense;
         private bool skillDash;
         private bool skillBarrier;
+        private bool skillUltimate;
 
         public int Level { get { return level; } }
         public int XP { get { return xp; } }
@@ -47,6 +48,7 @@ namespace RPGQGMMO
         public int Defense { get { return defense; } }
         public bool HasDash { get { return skillDash; } }
         public bool HasBarrier { get { return skillBarrier; } }
+        public bool HasUltimate { get { return skillUltimate; } }
 
         private void Awake()
         {
@@ -79,6 +81,7 @@ namespace RPGQGMMO
             else if (skill.Equals("defense", StringComparison.OrdinalIgnoreCase)) defense++;
             else if (skill.Equals("dash", StringComparison.OrdinalIgnoreCase)) skillDash = true;
             else if (skill.Equals("barrier", StringComparison.OrdinalIgnoreCase)) skillBarrier = true;
+            else if (skill.Equals("ultimate", StringComparison.OrdinalIgnoreCase)) skillUltimate = true;
             else return false;
             skillPoints--;
             Save();
@@ -114,6 +117,7 @@ namespace RPGQGMMO
             PlayerPrefs.SetInt("RPGQG_DEFENSE", defense);
             PlayerPrefs.SetInt("RPGQG_SKILL_DASH", skillDash ? 1 : 0);
             PlayerPrefs.SetInt("RPGQG_SKILL_BARRIER", skillBarrier ? 1 : 0);
+            PlayerPrefs.SetInt("RPGQG_SKILL_ULTIMATE", skillUltimate ? 1 : 0);
             PlayerPrefs.Save();
         }
 
@@ -126,6 +130,7 @@ namespace RPGQGMMO
             defense = Mathf.Max(0, PlayerPrefs.GetInt("RPGQG_DEFENSE", 0));
             skillDash = PlayerPrefs.GetInt("RPGQG_SKILL_DASH", 0) == 1;
             skillBarrier = PlayerPrefs.GetInt("RPGQG_SKILL_BARRIER", 0) == 1;
+            skillUltimate = PlayerPrefs.GetInt("RPGQG_SKILL_ULTIMATE", 0) == 1;
         }
     }
 }
