@@ -49,3 +49,20 @@ export function getReachableZones(id: string): Zone[] {
 export function canEnterZone(playerLevel: number, zone: Zone): boolean {
   return playerLevel >= zone.level;
 }
+
+export function getZoneProgress(playerLevel: number, zone: Zone): number {
+  if (zone.level <= 0) return 100;
+  return Math.min(100, Math.max(0, Math.round((playerLevel / zone.level) * 100)));
+}
+
+export function getZoneConnections(id: string): Array<{ from: string; to: string }> {
+  const zone = getZone(id);
+  return zone.neighbors.map(to => ({ from: zone.id, to }));
+}
+
+export function getZoneStatus(playerLevel: number, zone: Zone): 'current' | 'available' | 'locked' {
+  if (zone.id === zones.find(z => z.id === zone.id)?.id) {
+    return playerLevel >= zone.level ? 'available' : 'locked';
+  }
+  return playerLevel >= zone.level ? 'available' : 'locked';
+}
