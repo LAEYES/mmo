@@ -20,6 +20,7 @@ namespace RPGQGMMO
         [SerializeField] private float respawnInvulnerability = 2f;
         private bool respawning;
         private bool invulnerable;
+        private bool barrierActive;
 
         private float nextAttackTime;
 
@@ -45,8 +46,10 @@ namespace RPGQGMMO
 
         public void TakeDamage(int amount, RPGQGCombatController source)
         {
-            if (!IsAlive) return;
-            health = Mathf.Max(0, health - Mathf.Max(0, amount));
+            if (!IsAlive || invulnerable) return;
+            int incoming = Mathf.Max(0, amount);
+            if (barrierActive) incoming = Mathf.CeilToInt(incoming * 0.35f);
+            health = Mathf.Max(0, health - incoming);
             HealthChanged?.Invoke(health);
 
             if (health == 0)
@@ -63,6 +66,38 @@ namespace RPGQGMMO
         {
             if (amount > 0)
                 ExperienceGranted?.Invoke(amount);
+        }
+
+        public void ActivateBarrier(float duration)
+        {
+            if (!IsAlive) return;
+            barrierActive = true;
+            CancelInvoke(nameof(DeactivateBarrier));
+            Invoke(nameof(DeactivateBarrier), Mathf.Max(0.1f, duration));
+            TryGetComponent<RPGQGMMOBridge>(out var bridge);
+            if (bridge != null) bridge.NotifyStateChanged("skill:barrier:active");
+        }
+
+        private void DeactivateBarrier()
+        {
+            barrierActive = false;
+            TryGetComponent<RPGQGMMOBridge>(out var bridge);
+            if (bridge != null) bridge.NotifyStateChanged("skill:barrier:end");
+        }
+
+        public void ActivateUltimate(float radius)
+        {
+            if (!IsAlive) return;
+            RPGQGCombatController[] targets = FindObjectsOfType<RPGQGCombatController>();
+            int damage = Mathf.Max(1, attackPower * 3);
+            foreach (RPGQGCombatController target in targets)
+            {
+                if (target == this || !target.IsAlive) continue;
+                if (Vector3.Distance(transform.position, target.transform.position) <= radius)
+                    target.TakeDamage(damage, this);
+            }
+            TryGetComponent<RPGQGMMOBridge>(out var bridge);
+            if (bridge != null) bridge.NotifyStateChanged("skill:ultimate:impact:" + damage);
         }
 
         public void Heal(int amount)
