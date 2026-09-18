@@ -151,7 +151,7 @@ function App() {
   const [waypoint, setWaypoint] = useState<{x:number;y:number}|null>(null);
   const [pathLength, setPathLength] = useState(0);
   const [selectedSignal, setSelectedSignal] = useState<{type:'poi'|'npc'; name:string; x:number; y:number} | null>(null);
-  const [worldEvent, setWorldEvent] = useState(generateWorldEvent(getZone(player.zoneId),player.worldThreat,player.worldResources,player.explorationCount));
+  const [worldEvent, setWorldEvent] = useState(generateWorldEvent(getZone(player.zoneId),player.worldThreat,player.worldResources,player.explorationCount,player.factionStates.find(f=>f.faction===getZone(player.zoneId).faction)?.influence??100));
   const [scenario, setScenario] = useState(generateScenario(getZone(player.zoneId), player.level, player.explorationCount));
   const [poiMessage, setPoiMessage] = useState('');
   const [poiAction, setPoiAction] = useState('');
