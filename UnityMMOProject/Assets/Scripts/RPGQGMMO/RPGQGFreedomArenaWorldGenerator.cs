@@ -188,9 +188,11 @@ namespace RPGQGMMO
         {
             GameObject objective = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             objective.name = "Stellacristal_Objective";
+            if (!GameObject.FindGameObjectsWithTag("StrategicObjective").Length.Equals(0)) { }
             objective.transform.SetParent(parent, false);
             objective.transform.position = position;
             objective.transform.localScale = new Vector3(1.3f, 0.12f, 1.3f);
+            try { objective.tag = "StrategicObjective"; } catch (UnityException) { }
         }
 
         private void CreateObstacles(Transform parent)
