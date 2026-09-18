@@ -40,22 +40,23 @@ namespace RPGQGMMO
                 e.AddComponent<StandaloneInputModule>();
             }
 
-            joystick = CreateJoystick(c.transform);
-
-            CreateButton(c.transform, "ATTACK", new Vector2(-110, 120), new Vector2(170,170), Attack);
+            bool left = RPGQGInclusiveAccessibility.Instance != null && RPGQGInclusiveAccessibility.Instance.leftHanded;
+            joystick = CreateJoystick(c.transform, left);
+            Vector2 attackPos = left ? new Vector2(110, 120) : new Vector2(-110, 120);
+            CreateButton(c.transform, "ATTACK", attackPos, new Vector2(170,170), Attack);
             CreateButton(c.transform, "MENU", new Vector2(-95, -55), new Vector2(150,70), Menu);
             CreateButton(c.transform, "I", new Vector2(-285, -45), new Vector2(75,75), Inventory);
             CreateButton(c.transform, "Q", new Vector2(-375, -45), new Vector2(75,75), Quests);
             CreateButton(c.transform, "C", new Vector2(-465, -45), new Vector2(75,75), Character);
         }
 
-        private MobileJoystick CreateJoystick(Transform parent)
+        private MobileJoystick CreateJoystick(Transform parent, bool leftHanded)
         {
             GameObject baseGo = new GameObject("VirtualJoystick");
             baseGo.transform.SetParent(parent, false);
             RectTransform r = baseGo.AddComponent<RectTransform>();
             r.anchorMin = new Vector2(0,0); r.anchorMax = new Vector2(0,0);
-            r.pivot = new Vector2(.5f,.5f); r.anchoredPosition = new Vector2(150,170);
+            r.pivot = new Vector2(.5f,.5f); r.anchoredPosition = leftHanded ? new Vector2(150,170) : new Vector2(150,170);
             r.sizeDelta = new Vector2(220,220);
             Image bg = baseGo.AddComponent<Image>(); bg.color = new Color(.02f,.12f,.18f,.72f);
 
