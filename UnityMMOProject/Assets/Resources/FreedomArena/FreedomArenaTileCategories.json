@@ -1,0 +1,35 @@
+{
+  "project": "FreedomArena",
+  "version": 1,
+  "grid": { "cellSize": 1, "pixelsPerUnit": 32 },
+  "source": "Canva — Bibliothèque de tuiles MMO FreedomArena",
+  "categories": [
+    "floors",
+    "borders",
+    "transitions",
+    "walls",
+    "platforms",
+    "stairs",
+    "bridges",
+    "naturalTerrain",
+    "water",
+    "energy",
+    "plasma",
+    "doors",
+    "consoles",
+    "panels",
+    "industrial",
+    "obstacles",
+    "spawnZones",
+    "combatZones",
+    "sanctuaries",
+    "teleporters",
+    "objectives"
+  ],
+  "unityImport": {
+    "textureType": "Sprite (2D and UI)",
+    "spriteMode": "Multiple",
+    "filterMode": "Point",
+    "compression": "None"
+  }
+}
