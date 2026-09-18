@@ -39,7 +39,8 @@ function WorldCanvas({ zoneId, onTileMove }: { zoneId: string; onTileMove: (tile
       for (let y=0;y<rows;y++) for (let x=0;x<cols;x++) {
         const worldX = x + cameraX, worldY = y + cameraY;
         const terrain = getTile(worldX, worldY);
-        ctx.fillStyle = terrain.kind === 'water' ? '#132f4a' : terrain.kind === 'rock' ? '#30364a' : terrain.kind === 'wall' ? '#070b13' : ((x*17+y*31)%7<2 ? '#101b30' : '#0d1628');
+        const biome = Math.floor((worldX + worldY) / 12) % 4;
+        ctx.fillStyle = terrain.kind === 'water' ? '#102f4a' : terrain.kind === 'rock' ? '#30364a' : terrain.kind === 'wall' ? '#070b13' : biome === 0 ? '#101b30' : biome === 1 ? '#172536' : biome === 2 ? '#182d28' : '#241f32';
         ctx.fillRect(x*tile,y*tile,tile,tile);
         if (terrain.kind !== 'ground') {
           ctx.strokeStyle = terrain.kind === 'wall' ? '#202b40' : '#53627b';
@@ -50,6 +51,17 @@ function WorldCanvas({ zoneId, onTileMove }: { zoneId: string; onTileMove: (tile
       const zone=getZone(zoneId);
       ctx.strokeStyle='#3b5684'; ctx.lineWidth=2; ctx.strokeRect(12,12,rect.width-24,rect.height-24);
       ctx.fillStyle='#dce7ff'; ctx.font='600 14px Inter,sans-serif'; ctx.fillText(zone.name,24,38);
+      const mapPoi = zone.pointsOfInterest.map((name,index)=>({
+        name,
+        x: Math.floor((index + 1) * 60 / (zone.pointsOfInterest.length + 1)),
+        y: 5 + index * 8
+      }));
+      mapPoi.forEach((poi)=>{
+        const sx=(poi.x-cameraX)*tile+tile/2, sy=(poi.y-cameraY)*tile+tile/2;
+        if(sx<0||sy<0||sx>rect.width||sy>rect.height)return;
+        ctx.fillStyle='#d8b56a'; ctx.beginPath(); ctx.arc(sx,sy,6,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='#ead9ad'; ctx.font='10px Inter,sans-serif'; ctx.fillText(poi.name,sx+9,sy+3);
+      });
       zone.pointsOfInterest.forEach((name,index)=>{
         const x=24+((index+1)*(rect.width-48))/(zone.pointsOfInterest.length+1), y=rect.height*(index%2===0?.42:.68);
         ctx.fillStyle='#9db4e8'; ctx.beginPath(); ctx.arc(x,y,7,0,Math.PI*2); ctx.fill();
