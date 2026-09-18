@@ -11,6 +11,8 @@ namespace RPGQGMMO
         public int health;
         public int attack;
         public float speed;
+        public int rarity;
+        public int skillPoints;
     }
 
     /// <summary>
@@ -32,9 +34,15 @@ namespace RPGQGMMO
         private RPGQGCardGameRuntime cards;
         private int level = 1;
         private int xp;
+        private int skillPoints;
+        private int strength;
+        private int defense;
 
         public int Level { get { return level; } }
         public int XP { get { return xp; } }
+        public int SkillPoints { get { return skillPoints; } }
+        public int Strength { get { return strength; } }
+        public int Defense { get { return defense; } }
 
         private void Awake()
         {
@@ -52,11 +60,31 @@ namespace RPGQGMMO
             {
                 xp -= required;
                 level++;
+                skillPoints++;
                 required = 100 + (level - 1) * 50;
                 LevelChanged?.Invoke(level);
             }
             Save();
             if (bridge != null) bridge.NotifyStateChanged("rpg:xp:" + xp + ":level:" + level);
+        }
+
+        public bool SpendSkillPoint(string skill)
+        {
+            if (skillPoints <= 0 || string.IsNullOrEmpty(skill)) return false;
+            if (skill.Equals("strength", StringComparison.OrdinalIgnoreCase)) strength++;
+            else if (skill.Equals("defense", StringComparison.OrdinalIgnoreCase)) defense++;
+            else return false;
+            skillPoints--;
+            Save();
+            if (bridge != null) bridge.NotifyStateChanged("skill:" + skill);
+            return true;
+        }
+
+        public int GetRarityForCard(string cardId)
+        {
+            if (string.IsNullOrEmpty(cardId)) return 1;
+            int hash = Mathf.Abs(cardId.GetHashCode());
+            return 1 + (hash % 5);
         }
 
         public void CompleteQuest(string questId, int rewardXp)
@@ -75,6 +103,9 @@ namespace RPGQGMMO
         {
             PlayerPrefs.SetInt("RPGQG_RPG_LEVEL", level);
             PlayerPrefs.SetInt("RPGQG_RPG_XP", xp);
+            PlayerPrefs.SetInt("RPGQG_SKILL_POINTS", skillPoints);
+            PlayerPrefs.SetInt("RPGQG_STRENGTH", strength);
+            PlayerPrefs.SetInt("RPGQG_DEFENSE", defense);
             PlayerPrefs.Save();
         }
 
@@ -82,6 +113,9 @@ namespace RPGQGMMO
         {
             level = Mathf.Max(1, PlayerPrefs.GetInt("RPGQG_RPG_LEVEL", 1));
             xp = Mathf.Max(0, PlayerPrefs.GetInt("RPGQG_RPG_XP", 0));
+            skillPoints = Mathf.Max(0, PlayerPrefs.GetInt("RPGQG_SKILL_POINTS", 0));
+            strength = Mathf.Max(0, PlayerPrefs.GetInt("RPGQG_STRENGTH", 0));
+            defense = Mathf.Max(0, PlayerPrefs.GetInt("RPGQG_DEFENSE", 0));
         }
     }
 }
