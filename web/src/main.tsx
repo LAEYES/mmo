@@ -136,7 +136,7 @@ function App() {
   const equipped = getEquippedCard(player);
   const moveTo = (zoneId: string) => { const zone=getZone(zoneId); if(canEnterZone(player.level,zone)) update({...player,zoneId:zone.id,lastDiscovery:`Arrived at ${zone.name}`}); };
   const doExplore = () => update(explore(player));
-  const startCombat = () => setCombat(createEncounter(player.level,currentZone.level,equipped??{}));
+  const startCombat = () => setCombat(createEncounter(player.level,currentZone.level,{...(equipped??{}),threat:player.worldThreat}));
   const attack = () => {
     if(!combat)return;
     const next=playerAttack(combat); setCombat(next);
