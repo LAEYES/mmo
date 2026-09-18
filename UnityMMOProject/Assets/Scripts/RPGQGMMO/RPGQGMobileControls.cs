@@ -12,6 +12,9 @@ namespace RPGQGMMO
         public float joystickRadius = 85f;
 
         private MobileJoystick joystick;
+        private Camera worldCamera;
+        private Vector2 lastLook;
+        private bool draggingCamera;
 
         private void Awake()
         {
@@ -23,6 +26,7 @@ namespace RPGQGMMO
         private void Start()
         {
             if (player != null) player.mobileJoystick = joystick;
+            worldCamera = Camera.main;
         }
 
         private void Build()
@@ -44,6 +48,7 @@ namespace RPGQGMMO
             joystick = CreateJoystick(c.transform, left);
             Vector2 attackPos = left ? new Vector2(110, 120) : new Vector2(-110, 120);
             CreateButton(c.transform, "ATTACK", attackPos, new Vector2(170,170), Attack);
+            CreateButton(c.transform, "CAM", left ? new Vector2(-110, 310) : new Vector2(-110, 310), new Vector2(120,65), ToggleCameraMode);
             CreateButton(c.transform, "MENU", new Vector2(-95, -55), new Vector2(150,70), Menu);
             CreateButton(c.transform, "I", new Vector2(-285, -45), new Vector2(75,75), Inventory);
             CreateButton(c.transform, "Q", new Vector2(-375, -45), new Vector2(75,75), Quests);
@@ -97,6 +102,13 @@ namespace RPGQGMMO
                 if(d<best){best=d;nearest=candidate;}
             }
             if(nearest!=null) combat.TryAttack(nearest);
+        }
+
+        private void ToggleCameraMode(){ draggingCamera = !draggingCamera; }
+        private void Update(){
+            if(!draggingCamera || worldCamera==null || Input.touchCount==0) return;
+            Touch t=Input.GetTouch(0);
+            if(t.phase==TouchPhase.Moved){ Vector2 delta=t.deltaPosition; worldCamera.transform.RotateAround(player.transform.position,Vector3.up,delta.x*.15f); }
         }
 
         private void Menu(){ SendMessage("OpenMenu",SendMessageOptions.DontRequireReceiver); }
