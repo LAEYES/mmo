@@ -15,6 +15,12 @@ namespace RPGQGMMO
         public event Action Died;
         public event Action<int> DamageDealt;
 
+        [Header("Respawn")]
+        [SerializeField] private float respawnDelay = 5f;
+        [SerializeField] private float respawnInvulnerability = 2f;
+        private bool respawning;
+        private bool invulnerable;
+
         private float nextAttackTime;
 
         public bool IsAlive { get { return health > 0; } }
@@ -49,6 +55,7 @@ namespace RPGQGMMO
                     source.GrantExperience(25);
                 Died?.Invoke();
             if (TryGetComponent<RPGQGMMOBridge>(out var bridge)) bridge.NotifyStateChanged("player:dead");
+            if (!respawning) { respawning = true; StartCoroutine(RespawnRoutine()); }
             }
         }
 
