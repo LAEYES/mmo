@@ -1,10 +1,13 @@
 export type Combatant={id:string;name:string;level:number;maxHp:number;hp:number;attack:number;defense:number};
 export type CombatState={player:Combatant;enemy:Combatant;turn:'player'|'enemy';status:'active'|'victory'|'defeat';log:string[]};
-export type CombatBonuses={power?:number;defense?:number;vitality?:number;threat?:number};
+export type CombatBonuses={power?:number;defense?:number;vitality?:number;threat?:number;faction?:string;encounterChance?:number};
 export function createEncounter(playerLevel:number,zoneLevel:number,bonuses:CombatBonuses={}):CombatState{
- const level=Math.max(1,zoneLevel+Math.floor(Math.max(1,bonuses.threat??1)-1)/2),power=Math.max(0,bonuses.power??0),defense=Math.max(0,bonuses.defense??0),vitality=Math.max(0,bonuses.vitality??0);
+ const level=Math.max(1,zoneLevel+Math.floor((Math.max(1,bonuses.threat??1)-1)/2)),power=Math.max(0,bonuses.power??0),defense=Math.max(0,bonuses.defense??0),vitality=Math.max(0,bonuses.vitality??0);
  const player:Combatant={id:'player',name:'Player',level:playerLevel,maxHp:100+playerLevel*10+vitality,hp:100+playerLevel*10+vitality,attack:12+playerLevel*3+power,defense:5+playerLevel*2+defense};
- const enemy:Combatant={id:'enemy',name:level>=3?'Eclipse Warden':level===2?'Nomad Raider':'Frontier Scout',level,maxHp:70+level*15,hp:70+level*15,attack:9+level*3,defense:4+level};
+ const faction=bonuses.faction??(level>=3?'Eclipse':level===2?'Nomads':'Aegis');
+ const names:Record<string,string>={Aegis:'Aegis Sentinel',Nomads:'Nomad Raider',Eclipse:'Eclipse Warden'};
+ const encounterBoost=Math.max(0,Math.floor((bonuses.encounterChance??15)/30));
+ const enemy:Combatant={id:'enemy',name:names[faction]??'Frontier Scout',level,maxHp:70+level*15+encounterBoost*8,hp:70+level*15+encounterBoost*8,attack:9+level*3+encounterBoost,defense:4+level+Math.floor(encounterBoost/2)};
  return {player,enemy,turn:'player',status:'active',log:[`Encounter: ${enemy.name}`]};
 }
 function damage(attack:number,defense:number):number{return Math.max(1,attack-Math.floor(defense*.6));}
