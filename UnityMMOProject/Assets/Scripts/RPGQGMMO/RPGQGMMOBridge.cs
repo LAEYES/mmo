@@ -11,6 +11,8 @@ namespace RPGQGMMO
         public string archetype;
         public int maxHealth;
         public int attackPower;
+        public float moveSpeed;
+        public string role;
 
         public static RPGQGCardProfile FromCardId(string id)
         {
@@ -21,7 +23,9 @@ namespace RPGQGMMO
                 displayName = safeId,
                 archetype = "gardien",
                 maxHealth = 160,
-                attackPower = 14
+                attackPower = 14,
+                moveSpeed = 4.5f,
+                role = "Défenseur"
             };
 
             if (safeId.IndexOf("mage", StringComparison.OrdinalIgnoreCase) >= 0)
@@ -29,12 +33,16 @@ namespace RPGQGMMO
                 profile.archetype = "mage";
                 profile.maxHealth = 120;
                 profile.attackPower = 18;
+                profile.moveSpeed = 5.0f;
+                profile.role = "Mage";
             }
             else if (safeId.IndexOf("rodeur", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 profile.archetype = "rodeur";
                 profile.maxHealth = 140;
                 profile.attackPower = 16;
+                profile.moveSpeed = 5.5f;
+                profile.role = "Éclaireur";
             }
 
             return profile;
@@ -116,7 +124,7 @@ namespace RPGQGMMO
             if (playerCombat != null)
                 playerCombat.Configure(profile.maxHealth, profile.attackPower);
 
-            StateChanged?.Invoke("card:" + equippedCardId);
+            StateChanged?.Invoke("card:" + equippedCardId + ":" + profile.archetype + ":" + profile.maxHealth + ":" + profile.attackPower);
         }
 
         public void OnEnemyDefeated(string enemyId)
