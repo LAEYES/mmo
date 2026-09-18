@@ -19,7 +19,7 @@ namespace RPGQGMMO
         {
             string equipped = GetEquippedCardId();
             if (collector != null && bridge != null && collector.Owns(equipped))
-                bridge.ApplyCard(equipped);
+                ApplyCardProgression(equipped);
         }
 
         private void Awake()
@@ -27,6 +27,23 @@ namespace RPGQGMMO
             bridge = GetComponent<RPGQGMMOBridge>();
             collector = GetComponent<RPGQGGameCollector>();
             library = GetComponent<RPGQGGameLibrary>();
+        }
+
+        public int GetCardPower(string cardId)
+        {
+            int level = GetCardLevel(cardId);
+            return Mathf.Max(0, (level - 1) * 2);
+        }
+
+        public void ApplyCardProgression(string cardId)
+        {
+            if (bridge == null || collector == null || !collector.Owns(cardId)) return;
+            RPGQGCardProfile baseProfile = RPGQGCardProfile.FromCardId(cardId);
+            int bonus = GetCardPower(cardId);
+            bridge.ApplyCard(cardId);
+            if (bridge.playerCombat != null)
+                bridge.playerCombat.Configure(baseProfile.maxHealth + bonus * 4, baseProfile.attackPower + bonus);
+            bridge.NotifyStateChanged("card:progression:" + cardId + ":" + bonus);
         }
 
         public int GetCardLevel(string cardId)
@@ -63,7 +80,7 @@ namespace RPGQGMMO
             if (collector == null || bridge == null || !collector.Owns(cardId))
                 return false;
 
-            bridge.ApplyCard(cardId);
+            ApplyCardProgression(cardId);
             PlayerPrefs.SetString("RPGQG_EQUIPPED_CARD", cardId);
             PlayerPrefs.Save();
             bridge.NotifyStateChanged("card:equipped:" + cardId);
