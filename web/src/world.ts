@@ -181,3 +181,21 @@ export function getZoneDynamicModifiers(zone: Zone, worldThreat: number, worldRe
     encounterChance: Math.min(90, 15 + worldThreat * 5 + factionPressure * 10)
   };
 }
+
+export type WorldEvent = { id: string; title: string; description: string; zoneId: string; faction: Zone['faction']; intensity: number; effect: 'threat' | 'resources' | 'encounter'; };
+
+export function generateWorldEvent(zone: Zone, worldThreat: number, worldResources: number, explorationCount: number): WorldEvent {
+  const intensity = Math.max(1, Math.min(5, Math.floor((worldThreat + explorationCount) / 4) + 1));
+  const effect = worldResources < 3 ? 'resources' : worldThreat >= 4 ? 'threat' : 'encounter';
+  const titles = effect === 'resources' ? ['Supply Rush', 'Hidden Cache'] : effect === 'threat' ? ['Rising Patrols', 'Frontier Alert'] : ['Wandering Hunters', 'Unstable Encounter'];
+  const index = (explorationCount + worldThreat + worldResources) % titles.length;
+  return {
+    id: zone.id + ':event:' + explorationCount + ':' + worldThreat,
+    title: titles[index],
+    description: effect === 'resources' ? 'Resource activity is changing the local frontier.' : effect === 'threat' ? 'Local pressure is increasing and patrols are becoming more active.' : 'A mobile encounter has appeared near the current zone.',
+    zoneId: zone.id,
+    faction: zone.faction,
+    intensity,
+    effect
+  };
+}
