@@ -70,3 +70,31 @@ export function normalizePlayer(input:Partial<PlayerState>):PlayerState {
 }
 export function savePlayer(state:PlayerState):void { localStorage.setItem(STORAGE_KEY,JSON.stringify(normalizePlayer(state))); }
 export function clearPlayerSave():void { localStorage.removeItem(STORAGE_KEY); }
+
+const rarityOrder: CardRarity[] = ['Common','Rare','Epic','Legendary'];
+export function getNextRarity(rarity: CardRarity): CardRarity | null {
+  const index = rarityOrder.indexOf(rarity);
+  return index >= 0 && index < rarityOrder.length - 1 ? rarityOrder[index + 1] : null;
+}
+export function fuseCards(state: PlayerState, firstId: string, secondId: string): PlayerState {
+  if (firstId === secondId) return state;
+  const first = state.cards.find(card => card.id === firstId);
+  const second = state.cards.find(card => card.id === secondId);
+  if (!first || !second || first.rarity !== second.rarity) return state;
+  const rarity = getNextRarity(first.rarity);
+  if (!rarity) return state;
+  const fused: Card = {
+    id: `fusion-${first.id}-${second.id}`,
+    name: `${rarity} Fusion`,
+    rarity,
+    power: Math.round((first.power + second.power) / 2) + 2,
+    defense: Math.round((first.defense + second.defense) / 2) + 1,
+    vitality: Math.round((first.vitality + second.vitality) / 2) + 4,
+    xp: Math.floor((first.xp + second.xp) / 2),
+    level: Math.max(first.level, second.level)
+  };
+  const consumed = new Set([firstId, secondId]);
+  const cards = [...state.cards.filter(card => !consumed.has(card.id)), fused];
+  const equippedCardId = consumed.has(state.equippedCardId ?? '') ? fused.id : state.equippedCardId;
+  return { ...state, cards, equippedCardId };
+}
