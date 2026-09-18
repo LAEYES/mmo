@@ -58,12 +58,19 @@ export function applyScenarioChoice(state: PlayerState, choiceIndex: number): Pl
   const risk = choiceIndex === 0;
   const xpGain = risk ? 10 : 5;
   const xp = state.xp + xpGain;
+  const questId = risk ? 'scenario-1' : 'survival-1';
+  const quests = state.quests.map(q => {
+    if (q.id !== questId || q.completed) return q;
+    const progress = Math.min(q.target, q.progress + 1);
+    return { ...q, progress, completed: progress >= q.target };
+  });
   return {
     ...state,
     xp,
     level: 1 + Math.floor(xp / 100),
     worldThreat: Math.max(1, state.worldThreat + (risk ? 1 : -1)),
-    worldResources: Math.max(0, state.worldResources + (risk ? 1 : 2))
+    worldResources: Math.max(0, state.worldResources + (risk ? 1 : 2)),
+    quests
   };
 }
 
