@@ -255,6 +255,10 @@ export type WorldEvent = { id: string; title: string; description: string; zoneI
 export function getWorldEventLifetime(event: WorldEvent): number {
   return Math.max(1, 6 - event.intensity);
 }
+export function getWorldEventProgress(event: WorldEvent, age: number): number {
+  const lifetime = Math.max(1, event.duration);
+  return Math.max(0, Math.min(100, Math.round((Math.min(age, lifetime) / lifetime) * 100)));
+}
 
 
 export function generateWorldEvent(zone: Zone, worldThreat: number, worldResources: number, explorationCount: number, factionInfluence = 100): WorldEvent {
