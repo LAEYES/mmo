@@ -234,6 +234,23 @@ export function getZoneDynamicModifiers(zone: Zone, worldThreat: number, worldRe
   };
 }
 
+export type FactionPressure = { faction: Zone['faction']; influence: number; pressure: number; status: 'dominant' | 'contested' | 'weak' | 'neutral' };
+
+export function getZoneFactionPressure(zone: Zone, factionInfluence: number): FactionPressure {
+  if (zone.faction === 'Neutral') return { faction: 'Neutral', influence: factionInfluence, pressure: 0, status: 'neutral' };
+  const influence = Math.max(0, Math.min(200, Math.floor(factionInfluence)));
+  const pressure = Math.max(0, Math.floor((100 - influence) / 20));
+  const status: FactionPressure['status'] = influence >= 125 ? 'dominant' : influence >= 80 ? 'contested' : 'weak';
+  return { faction: zone.faction, influence, pressure, status };
+}
+
+export function getFactionPressureLabel(pressure: FactionPressure): string {
+  if (pressure.status === 'dominant') return pressure.faction + ' control';
+  if (pressure.status === 'weak') return pressure.faction + ' under pressure';
+  if (pressure.status === 'contested') return pressure.faction + ' contested';
+  return 'Neutral frontier';
+}
+
 export type WorldEvent = { id: string; title: string; description: string; zoneId: string; faction: Zone['faction']; intensity: number; effect: 'threat' | 'resources' | 'encounter'; };
 
 export function generateWorldEvent(zone: Zone, worldThreat: number, worldResources: number, explorationCount: number, factionInfluence = 100): WorldEvent {
