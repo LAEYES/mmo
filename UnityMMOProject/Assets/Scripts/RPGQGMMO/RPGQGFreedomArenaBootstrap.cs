@@ -62,6 +62,9 @@ namespace RPGQGMMO
             if (modularUI == null)
                 modularUI = player.AddComponent<RPGQGMMOModularUI>();
 
+            RPGQGCharacterProfileUI profileUI = player.GetComponent<RPGQGCharacterProfileUI>();
+            if (profileUI == null) profileUI = player.AddComponent<RPGQGCharacterProfileUI>();
+
             RPGQGMMOUI ui = player.GetComponent<RPGQGMMOUI>();
             if (ui == null)
                 ui = player.AddComponent<RPGQGMMOUI>();
