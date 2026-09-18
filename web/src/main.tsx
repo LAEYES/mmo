@@ -219,6 +219,11 @@ function App() {
   const update = (next: typeof player) => { setPlayer(next); savePlayer(next); };
   const chooseFaction = (faction: Faction) => update({ ...player, faction });
   const currentZone = getZone(player.zoneId);
+  const environment = getZoneEnvironment(currentZone, player.worldThreat, player.worldResources, player.explorationCount);
+  const zoneNpcs = getZoneNpcs(currentZone, player.worldThreat, player.worldResources, player.explorationCount);
+  const localFaction = currentZone.faction === 'Neutral' ? null : player.factionStates.find(f => f.faction === currentZone.faction);
+  const factionPressure = getZoneFactionPressure(currentZone, localFaction?.influence ?? 100);
+  const activeFactionInfluence = currentZone.faction === 'Neutral' ? 100 : (localFaction?.influence ?? 100);
   useEffect(() => {
     if (worldEventAge >= worldEvent.duration) {
       const nextEvent = generateWorldEvent(currentZone, player.worldThreat, player.worldResources, player.explorationCount, activeFactionInfluence);
@@ -230,12 +235,6 @@ function App() {
     const timer = window.setTimeout(() => setWorldEventAge(age => age + 1), 1000);
     return () => window.clearTimeout(timer);
   }, [worldEventAge, worldEvent.duration, currentZone.id, player.worldThreat, player.worldResources, player.explorationCount, activeFactionInfluence]);
-
-  const environment = getZoneEnvironment(currentZone, player.worldThreat, player.worldResources, player.explorationCount);
-  const zoneNpcs = getZoneNpcs(currentZone, player.worldThreat, player.worldResources, player.explorationCount);
-  const localFaction = currentZone.faction === 'Neutral' ? null : player.factionStates.find(f => f.faction === currentZone.faction);
-  const factionPressure = getZoneFactionPressure(currentZone, localFaction?.influence ?? 100);
-  const activeFactionInfluence = currentZone.faction === 'Neutral' ? 100 : (localFaction?.influence ?? 100);
   const zoneModifiers = getZoneDynamicModifiers(currentZone, player.worldThreat, player.worldResources, player.factionStates.find(f=>f.faction===player.faction)?.influence??100);
   const environmentLabels = { dawn: 'Aube', day: 'Jour', dusk: 'Crépuscule', night: 'Nuit' } as const;
   const weatherLabels = { clear: 'Clair', mist: 'Brume', storm: 'Tempête', frost: 'Gel' } as const;
