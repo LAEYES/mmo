@@ -259,6 +259,14 @@ export function getWorldEventProgress(event: WorldEvent, age: number): number {
   const lifetime = Math.max(1, event.duration);
   return Math.max(0, Math.min(100, Math.round((Math.min(age, lifetime) / lifetime) * 100)));
 }
+export type WorldEventPhase = 'active' | 'urgent' | 'expiring';
+
+export function getWorldEventPhase(event: WorldEvent, age: number): WorldEventPhase {
+  const progress = getWorldEventProgress(event, age);
+  if (progress >= 80) return 'expiring';
+  if (progress >= 50) return 'urgent';
+  return 'active';
+}
 
 
 export function generateWorldEvent(zone: Zone, worldThreat: number, worldResources: number, explorationCount: number, factionInfluence = 100): WorldEvent {
