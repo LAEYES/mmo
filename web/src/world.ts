@@ -94,3 +94,17 @@ export function moveTile(position: TilePosition, target: TilePosition): TilePosi
   for (const next of candidates) if (canWalkTile(next.x, next.y)) return next;
   return position;
 }
+
+export function getPoiPosition(zone: Zone, index: number): TilePosition {
+  const count = Math.max(1, zone.pointsOfInterest.length);
+  return { x: Math.max(1, Math.floor(((index + 1) * 60) / (count + 1))), y: 5 + index * 8 };
+}
+
+export function getNearestPoi(zone: Zone, position: TilePosition): { name: string; index: number; distance: number } | null {
+  if (!zone.pointsOfInterest.length) return null;
+  return zone.pointsOfInterest.reduce((nearest, name, index) => {
+    const poi = getPoiPosition(zone, index);
+    const distance = Math.abs(poi.x - position.x) + Math.abs(poi.y - position.y);
+    return distance < nearest.distance ? { name, index, distance } : nearest;
+  }, { name: zone.pointsOfInterest[0], index: 0, distance: Number.POSITIVE_INFINITY });
+}
