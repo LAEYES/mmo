@@ -11,7 +11,7 @@ function factionPressureStatus(zone: ReturnType<typeof getZone>, worldThreat: nu
   return signal >= 125 ? 'rgba(120,180,255,.75)' : signal >= 80 ? 'rgba(220,190,110,.75)' : 'rgba(230,110,130,.8)';
 }
 
-function WorldCanvas({ zoneId, waypoint, worldThreat, worldResources, explorationCount, onTileMove }: { zoneId: string; waypoint: {x:number;y:number}|null; worldThreat: number; worldResources: number; explorationCount: number; onTileMove: (tileX: number, tileY: number) => void }) {
+function WorldCanvas({ zoneId, waypoint, worldThreat, worldResources, explorationCount, onTileMove, onSignalSelect }: { zoneId: string; waypoint: {x:number;y:number}|null; worldThreat: number; worldResources: number; explorationCount: number; onTileMove: (tileX: number, tileY: number) => void; onSignalSelect: (signal: {type:'poi'|'npc'; name:string; x:number; y:number}) => void }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const position = useRef({ x: 0, y: 0 });
   useEffect(() => {
@@ -19,14 +19,35 @@ function WorldCanvas({ zoneId, waypoint, worldThreat, worldResources, exploratio
     if (!canvas) return;
     const onPointer = (event: PointerEvent) => {
       const rect = canvas.getBoundingClientRect();
-      const tileX = Math.floor((event.clientX - rect.left) / 32);
-      const tileY = Math.floor((event.clientY - rect.top) / 32);
+      const tile = 32;
+      const clickX = event.clientX - rect.left;
+      const clickY = event.clientY - rect.top;
+      const cols = Math.ceil(rect.width / tile);
+      const rows = Math.ceil(rect.height / tile);
+      const cameraX = Math.max(0, Math.min(59 - cols, position.current.x - Math.floor(cols / 2)));
+      const cameraY = Math.max(0, Math.min(39 - rows, position.current.y - Math.floor(rows / 2)));
+      const zone = getZone(zoneId);
+      const npcs = getZoneNpcs(zone, worldThreat, worldResources, explorationCount);
+      const signals: Array<{type:'poi'|'npc';name:string;x:number;y:number;sx:number;sy:number}> = [];
+      zone.pointsOfInterest.forEach((name,index) => {
+        const x = Math.floor((index + 1) * 60 / (zone.pointsOfInterest.length + 1));
+        const y = 5 + index * 8;
+        signals.push({type:'poi',name,x,y,sx:(x-cameraX)*tile+tile/2,sy:(y-cameraY)*tile+tile/2});
+      });
+      npcs.forEach(npc => signals.push({type:'npc',name:npc.name,x:npc.x,y:npc.y,sx:(npc.x-cameraX)*tile+tile/2,sy:(npc.y-cameraY)*tile+tile/2}));
+      const hit = signals.find(signal => Math.hypot(clickX-signal.sx, clickY-signal.sy) <= 14);
+      if (hit) {
+        onSignalSelect({type:hit.type,name:hit.name,x:hit.x,y:hit.y});
+        return;
+      }
+      const tileX = Math.floor(clickX / tile) + cameraX;
+      const tileY = Math.floor(clickY / tile) + cameraY;
       position.current = { x: tileX, y: tileY };
       onTileMove(tileX, tileY);
     };
     canvas.addEventListener('pointerdown', onPointer);
     return () => canvas.removeEventListener('pointerdown', onPointer);
-  }, [onTileMove]);
+  }, [onTileMove, onSignalSelect, zoneId, worldThreat, worldResources, explorationCount]);
   useEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
@@ -184,7 +205,7 @@ function App() {
 
   return <main className="shell"><header className="header"><div><span className="eyebrow">FREEDOMARENA × RPGQG CARDS</span><h1>Web Arena</h1></div><span className="status">RPGQG progression</span></header>
   <section className="hero"><div><span className="eyebrow">PLAYER</span><h2>{player.name}</h2><p>Level {player.level} · {player.xp} XP · {player.victories} victories · {player.arenaWins} arena wins · {player.fusionMaterials} fusion materials</p></div>{equipped&&<div className="equipped"><span className="eyebrow">EQUIPPED CARD</span><strong>{equipped.name}</strong><span>{equipped.rarity} · Lv {equipped.level}</span>{lastCardXp>0&&<small>+{lastCardXp} card XP on last victory</small>}</div>}</section>
-  <section className="panel"><div><span className="eyebrow">WORLD / EXPLORATION</span><h2>{currentZone.name}</h2><p>{currentZone.description}</p><div className="world-layout"><div className="world-map"><WorldCanvas zoneId={player.zoneId} waypoint={waypoint} worldThreat={player.worldThreat} worldResources={player.worldResources} explorationCount={player.explorationCount} onTileMove={(x,y)=>{const next=moveTile(worldTile,{x,y});setWorldTile(next);update({...player,worldTile:next});setWorldMessage(next.x===x&&next.y===y?`Moved to tile ${x}, ${y}.`:`Blocked path: ${getTile(x,y).kind} tile.`)}} />{zones.map(zone=><button key={zone.id} className={zone.id===player.zoneId?'zone-node active':'zone-node'} disabled={getZoneStatus(player.level,zone,player.zoneId)==='locked'} onClick={()=>moveTo(zone.id)}><strong>{zone.name}</strong><span>Lv {zone.level} · {zone.faction}</span></button>)}</div><div className="zone-info"><p><strong>Tile:</strong> {worldTile.x}, {worldTile.y} · <strong>World:</strong> {worldMessage}</p>{waypoint&&<p><strong>Waypoint:</strong> {waypoint.x}, {waypoint.y} · <strong>Path:</strong> {pathLength} steps</p>}{nearestPoi&&<p><strong>Nearest POI:</strong> {nearestPoi.name} · distance {nearestPoi.distance}</p>}{selectedSignal&&<p><strong>Signal:</strong> {selectedSignal.name} · {selectedSignal.type.toUpperCase()} · {selectedSignal.x}, {selectedSignal.y}</p>}{nearestNpc.npc&&<p><strong>Nearest faction NPC:</strong> {nearestNpc.npc.name} · {nearestNpc.npc.activity} · distance {nearestNpc.distance}</p>}{selectedSignal&&<button type="button" onClick={()=>{setWaypoint({x:selectedSignal.x,y:selectedSignal.y});setAutoMove(true);setWorldMessage('Waypoint set: '+selectedSignal.name);}}>Navigate to signal</button>}{nearestNpc.npc&&<button type="button" disabled={nearestNpc.distance>2} onClick={()=>{const result=interactWithNpc(nearestNpc.npc,player.worldThreat,player.worldResources);update(applyNpcInteraction(player,nearestNpc.npc.faction as Faction,result.action));setWorldMessage(result.message);}}>{nearestNpc.distance<=2?'Interact with NPC':'Move closer to interact'}</button>}{poiMessage&&<p><strong>Discovery:</strong> {poiMessage} · <strong>Action:</strong> {poiAction}</p>}<p><strong>Faction:</strong> {currentZone.faction} · <strong>Required level:</strong> {currentZone.level}</p><p><strong>Points of interest:</strong> {currentZone.pointsOfInterest.join(' · ')}</p><div className="actions"><button onClick={doExplore}>Explore this zone</button><button onClick={startCombat} disabled={combat?.status==='active'}>Enter combat</button></div>{player.lastDiscovery&&<p><strong>Latest discovery:</strong> {player.lastDiscovery}</p>}</div></div></div></section>
+  <section className="panel"><div><span className="eyebrow">WORLD / EXPLORATION</span><h2>{currentZone.name}</h2><p>{currentZone.description}</p><div className="world-layout"><div className="world-map"><WorldCanvas zoneId={player.zoneId} waypoint={waypoint} worldThreat={player.worldThreat} worldResources={player.worldResources} explorationCount={player.explorationCount} onSignalSelect={setSelectedSignal} onTileMove={(x,y)=>{const next=moveTile(worldTile,{x,y});setWorldTile(next);update({...player,worldTile:next});setWorldMessage(next.x===x&&next.y===y?`Moved to tile ${x}, ${y}.`:`Blocked path: ${getTile(x,y).kind} tile.`)}} />{zones.map(zone=><button key={zone.id} className={zone.id===player.zoneId?'zone-node active':'zone-node'} disabled={getZoneStatus(player.level,zone,player.zoneId)==='locked'} onClick={()=>moveTo(zone.id)}><strong>{zone.name}</strong><span>Lv {zone.level} · {zone.faction}</span></button>)}</div><div className="zone-info"><p><strong>Tile:</strong> {worldTile.x}, {worldTile.y} · <strong>World:</strong> {worldMessage}</p>{waypoint&&<p><strong>Waypoint:</strong> {waypoint.x}, {waypoint.y} · <strong>Path:</strong> {pathLength} steps</p>}{nearestPoi&&<p><strong>Nearest POI:</strong> {nearestPoi.name} · distance {nearestPoi.distance}</p>}{selectedSignal&&<p><strong>Signal:</strong> {selectedSignal.name} · {selectedSignal.type.toUpperCase()} · {selectedSignal.x}, {selectedSignal.y}</p>}{nearestNpc.npc&&<p><strong>Nearest faction NPC:</strong> {nearestNpc.npc.name} · {nearestNpc.npc.activity} · distance {nearestNpc.distance}</p>}{selectedSignal&&<button type="button" onClick={()=>{setWaypoint({x:selectedSignal.x,y:selectedSignal.y});setAutoMove(true);setWorldMessage('Waypoint set: '+selectedSignal.name);}}>Navigate to signal</button>}{nearestNpc.npc&&<button type="button" disabled={nearestNpc.distance>2} onClick={()=>{const result=interactWithNpc(nearestNpc.npc,player.worldThreat,player.worldResources);update(applyNpcInteraction(player,nearestNpc.npc.faction as Faction,result.action));setWorldMessage(result.message);}}>{nearestNpc.distance<=2?'Interact with NPC':'Move closer to interact'}</button>}{poiMessage&&<p><strong>Discovery:</strong> {poiMessage} · <strong>Action:</strong> {poiAction}</p>}<p><strong>Faction:</strong> {currentZone.faction} · <strong>Required level:</strong> {currentZone.level}</p><p><strong>Points of interest:</strong> {currentZone.pointsOfInterest.join(' · ')}</p><div className="actions"><button onClick={doExplore}>Explore this zone</button><button onClick={startCombat} disabled={combat?.status==='active'}>Enter combat</button></div>{player.lastDiscovery&&<p><strong>Latest discovery:</strong> {player.lastDiscovery}</p>}</div></div></div></section>
   <section className="panel"><div><span className="eyebrow">ARENA / COMBAT</span><h2>{combat?combat.enemy.name:'No active encounter'}</h2>{!combat&&<p>Start an arena encounter from the current zone.</p>}{combat&&<><p><strong>You:</strong> {combat.player.hp}/{combat.player.maxHp} HP · ATK {combat.player.attack} · DEF {combat.player.defense}</p><p><strong>Enemy:</strong> {combat.enemy.hp}/{combat.enemy.maxHp} HP · ATK {combat.enemy.attack} · DEF {combat.enemy.defense}</p><div className="actions">{combat.status==='active'&&<button onClick={attack} disabled={combat.turn!=='player'}>Attack</button>}{combat.status!=='active'&&<button onClick={()=>setCombat(null)}>Leave encounter</button>}</div><p>{combat.log.slice(-3).join(' · ')}</p>{combat.status==='victory'&&<><p><strong>RPGQG reward:</strong> +{getCombatReward(combat)} XP + 1 card.</p><p><strong>Combat summary:</strong> {getCombatSummary(combat).rounds} rounds · {getCombatSummary(combat).damageDealt} damage dealt · {getCombatSummary(combat).damageTaken} damage taken.</p></>}{combat.status==='defeat'&&<p><strong>Defeat.</strong> No card reward granted.</p>}</>}</div></section>
   <section className="panel"><div><span className="eyebrow">TRAVEL</span><h2>Reachable zones</h2></div><div className="actions">{getReachableZones(player.zoneId).map(zone=><button key={zone.id} disabled={!canEnterZone(player.level,zone)} onClick={()=>moveTo(zone.id)}>{zone.name} · Lv {zone.level}</button>)}</div><p>World zones: {zones.length}</p></section>
   <section className="panel"><div><span className="eyebrow">FACTION</span><h2>Choose your allegiance</h2></div><div className="actions">{factions.map(f=><button className={player.faction===f?'selected':''} key={f} onClick={()=>chooseFaction(f)}>{f}</button>)}</div><p>Current faction: <strong>{player.faction}</strong></p></section>
