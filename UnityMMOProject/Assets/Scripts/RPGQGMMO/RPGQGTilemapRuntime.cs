@@ -25,6 +25,26 @@ namespace RPGQGMMO
             BuildFallbackGrid();
         }
 
+        public void BuildStrategicArenaTiles(int arenaIndex)
+        {
+            ClearFallbackGrid();
+            int variant = Mathf.Abs(arenaIndex) % 5;
+            width = 24 + variant * 4;
+            height = 18 + variant * 3;
+            cellSize = 1f;
+            for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
+            {
+                GameObject tile = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                tile.name = "FA_Tile_" + variant + "_" + x + "_" + y;
+                tile.transform.SetParent(tilemapRoot != null ? tilemapRoot : transform);
+                tile.transform.position = CellToWorld(x, y) + Vector3.up * 0.01f;
+                tile.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+                tile.transform.localScale = Vector3.one * cellSize;
+                fallbackTiles.Add(tile);
+            }
+        }
+
         public Vector3 CellToWorld(int x, int y)
         {
             Vector3 origin = tilemapRoot != null ? tilemapRoot.position : transform.position;
