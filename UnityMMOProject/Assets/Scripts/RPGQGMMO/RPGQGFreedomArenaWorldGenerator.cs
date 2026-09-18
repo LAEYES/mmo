@@ -32,6 +32,8 @@ namespace RPGQGMMO
         public float spawnRadius = 10f;
         public int biomeGene = 0;
         public int layoutGene = 0;
+        public float hazardDensity = 0.25f;
+        public float enemyPower = 1f;
 
         [Header("Gameplay")]
         public Vector3 playerSpawn = new Vector3(0f, 1f, 0f);
@@ -81,6 +83,8 @@ namespace RPGQGMMO
             biomeGene = (biomeGene + Random.Range(0, 5)) % 5;
             layoutGene = (layoutGene + Random.Range(0, 4)) % 4;
             enemyCount = Mathf.Clamp(Mathf.RoundToInt(enemyCount * adaptation * (0.75f + combatDensity)), 2, 24);
+            hazardDensity = Mathf.Clamp01(hazardDensity + Random.Range(-mutationRate, mutationRate));
+            enemyPower = Mathf.Clamp(enemyPower * (1f + Random.Range(-mutationRate * 0.5f, mutationRate * 0.5f)), 0.7f, 1.8f);
             seed = unchecked(seed * 1103515245 + 12345 + generation * 97);
             SaveEvolutionState();
             Generate();
@@ -100,6 +104,8 @@ namespace RPGQGMMO
             PlayerPrefs.SetFloat("FA_SPAWN_RADIUS", spawnRadius);
             PlayerPrefs.SetInt("FA_BIOME", biomeGene);
             PlayerPrefs.SetInt("FA_LAYOUT", layoutGene);
+            PlayerPrefs.SetFloat("FA_HAZARD", hazardDensity);
+            PlayerPrefs.SetFloat("FA_ENEMY_POWER", enemyPower);
             PlayerPrefs.Save();
         }
 
@@ -117,6 +123,8 @@ namespace RPGQGMMO
             spawnRadius = PlayerPrefs.GetFloat("FA_SPAWN_RADIUS", spawnRadius);
             biomeGene = PlayerPrefs.GetInt("FA_BIOME", biomeGene);
             layoutGene = PlayerPrefs.GetInt("FA_LAYOUT", layoutGene);
+            hazardDensity = PlayerPrefs.GetFloat("FA_HAZARD", hazardDensity);
+            enemyPower = PlayerPrefs.GetFloat("FA_ENEMY_POWER", enemyPower);
         }
 
         [ContextMenu("Generate FreedomArena")]
@@ -134,6 +142,7 @@ namespace RPGQGMMO
             float spread = Mathf.Lerp(7f, 14f, objectiveSpread);
             CreateObjective(arena.transform, new Vector3(0f, 0.1f, spread));
             CreateObjective(arena.transform, new Vector3(spread, 0.1f, 0f));
+            CreateHazards(arena.transform, random);
             CreateObstacles(arena.transform);
             CreateEnemies(arena.transform);
 
