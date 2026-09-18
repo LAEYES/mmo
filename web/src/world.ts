@@ -183,6 +183,18 @@ export type FactionNpc = {
   activity: 'patrol' | 'trade' | 'observe' | 'defend';
 };
 
+export type NpcInteraction = {
+  npc: FactionNpc;
+  action: 'dialogue' | 'trade' | 'patrol';
+  message: string;
+};
+
+export function interactWithNpc(npc: FactionNpc, worldThreat: number, worldResources: number): NpcInteraction {
+  const action = npc.activity === 'trade' && worldResources >= 3 ? 'trade' : npc.activity === 'patrol' ? 'patrol' : 'dialogue';
+  const message = action === 'trade' ? npc.name + ' offers frontier supplies.' : action === 'patrol' ? npc.name + ' reports increased patrol activity.' : npc.name + ' shares information about the local faction.';
+  return { npc, action, message };
+}
+
 export function getZoneNpcs(zone: Zone, worldThreat: number, worldResources: number, explorationCount: number): FactionNpc[] {
   const faction = zone.faction === 'Neutral' ? 'Aegis' : zone.faction;
   const role = faction === 'Aegis' ? 'guard' : faction === 'Nomads' ? 'scout' : 'mystic';
