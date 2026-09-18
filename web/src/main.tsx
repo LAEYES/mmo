@@ -5,97 +5,57 @@ import { canEnterZone, explore, getReachableZones, getZone, zones } from './worl
 import { createEncounter, getCombatReward, getCombatSummary, playerAttack, type CombatState } from './combat';
 import { equipCard, factions, fuseCards, getCardFusionCost, getEquippedCard, grantArenaReward, loadPlayer, savePlayer, upgradeCard, type Faction } from './game';
 
-function WorldCanvas({ zoneId }: { zoneId: string }) {
+function WorldCanvas({ zoneId, onTileMove }: { zoneId: string; onTileMove: (tileX: number, tileY: number) => void }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  const position = useRef({ x: 0, y: 0 });
   useEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
     const onPointer = (event: PointerEvent) => {
       const rect = canvas.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-      canvas.dispatchEvent(new CustomEvent('world-tile-click', { detail: { x, y, tileX: Math.floor(x / 32), tileY: Math.floor(y / 32) } }));
+      const tileX = Math.floor((event.clientX - rect.left) / 32);
+      const tileY = Math.floor((event.clientY - rect.top) / 32);
+      position.current = { x: tileX, y: tileY };
+      onTileMove(tileX, tileY);
     };
     canvas.addEventListener('pointerdown', onPointer);
     return () => canvas.removeEventListener('pointerdown', onPointer);
-  }, []);
-  const
-  const ref = useRef<HTMLCanvasElement>(null);
+  }, [onTileMove]);
   useEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    const dpr = window.devicePixelRatio || 1;
     const draw = () => {
       const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
       canvas.width = Math.max(1, Math.floor(rect.width * dpr));
       canvas.height = Math.max(1, Math.floor(rect.height * dpr));
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const tile = 32;
-      const cols = Math.ceil(rect.width / tile);
-      const rows = Math.ceil(rect.height / tile);
+      const tile = 32, cols = Math.ceil(rect.width / tile), rows = Math.ceil(rect.height / tile);
       ctx.clearRect(0, 0, rect.width, rect.height);
-      for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
-        const noise = (x * 17 + y * 31) % 7;
-        ctx.fillStyle = noise < 2 ? '#101b30' : '#0d1628';
-        ctx.fillRect(x * tile, y * tile, tile, tile);
+      for (let y=0;y<rows;y++) for (let x=0;x<cols;x++) {
+        ctx.fillStyle = (x*17+y*31)%7<2 ? '#101b30' : '#0d1628';
+        ctx.fillRect(x*tile,y*tile,tile,tile);
       }
-      const zone = getZone(zoneId);
-      const poiPositions = zone.pointsOfInterest.map((name, index) => ({
-        name,
-        x: 24 + ((index + 1) * (rect.width - 48)) / (zone.pointsOfInterest.length + 1),
-        y: rect.height * (index % 2 === 0 ? 0.42 : 0.68)
-      }));
-      ctx.strokeStyle = '#526b9d';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      poiPositions.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
-      ctx.stroke();
-      const playerX = rect.width * 0.5;
-      const playerY = rect.height * 0.84;
-      ctx.strokeStyle = '#829bd0';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([5, 5]);
-      ctx.beginPath();
-      ctx.moveTo(playerX, playerY);
-      if (poiPositions.length) ctx.lineTo(poiPositions[poiPositions.length - 1].x, poiPositions[poiPositions.length - 1].y);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(playerX, playerY, 9, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#9db4e8';
-      ctx.stroke();
-      ctx.fillStyle = '#c9d7f5';
-      ctx.font = '600 11px Inter, sans-serif';
-      ctx.fillText('PLAYER', playerX - 22, playerY + 24);
-      poiPositions.forEach((p) => {
-        ctx.fillStyle = '#9db4e8';
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#c9d7f5';
-        ctx.font = '11px Inter, sans-serif';
-        ctx.fillText(p.name, p.x + 10, p.y + 4);
+      const zone=getZone(zoneId);
+      ctx.strokeStyle='#3b5684'; ctx.lineWidth=2; ctx.strokeRect(12,12,rect.width-24,rect.height-24);
+      ctx.fillStyle='#dce7ff'; ctx.font='600 14px Inter,sans-serif'; ctx.fillText(zone.name,24,38);
+      zone.pointsOfInterest.forEach((name,index)=>{
+        const x=24+((index+1)*(rect.width-48))/(zone.pointsOfInterest.length+1), y=rect.height*(index%2===0?.42:.68);
+        ctx.fillStyle='#9db4e8'; ctx.beginPath(); ctx.arc(x,y,7,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='#c9d7f5'; ctx.font='11px Inter,sans-serif'; ctx.fillText(name,x+10,y+4);
       });
-      ctx.strokeStyle = '#3b5684';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(12, 12, rect.width - 24, rect.height - 24);
-      ctx.fillStyle = '#dce7ff';
-      ctx.font = '600 14px Inter, sans-serif';
-      ctx.fillText(zone.name, 24, 38);
-      ctx.font = '12px Inter, sans-serif';
-      ctx.fillStyle = '#8ea3c8';
-      ctx.fillText('Tile world · ' + zone.pointsOfInterest.length + ' POI', 24, 58);
+      const px=position.current.x*tile+tile/2, py=position.current.y*tile+tile/2;
+      ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(px,py,9,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle='#9db4e8'; ctx.stroke(); ctx.fillStyle='#c9d7f5'; ctx.font='600 11px Inter,sans-serif'; ctx.fillText('PLAYER',px-22,py+24);
     };
     draw();
-    window.addEventListener('resize', draw);
-    return () => window.removeEventListener('resize', draw);
-  }, [zoneId]);
+    window.addEventListener('resize',draw);
+    return()=>window.removeEventListener('resize',draw);
+  },[zoneId]);
   return <canvas ref={ref} className="tile-canvas" aria-label={`Tile map of ${getZone(zoneId).name}`} />;
 }
-
 function App() {
   const [player, setPlayer] = useState(loadPlayer);
   const [name, setName] = useState(player.name === 'Arena Player' ? '' : player.name);
