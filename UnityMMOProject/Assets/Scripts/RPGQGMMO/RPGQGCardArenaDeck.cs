@@ -20,6 +20,7 @@ namespace RPGQGMMO
         public int experience;
         public bool unlocked = true;
         public int objectiveCount = 2;
+        public string category = "Terrain";
     }
 
     /// <summary>
@@ -30,15 +31,17 @@ namespace RPGQGMMO
     {
         public List<RPGQGArenaCard> cards = new List<RPGQGArenaCard>
         {
-            new RPGQGArenaCard { id="cristal-capture", name="Cristal", biome=1, layout=0, mode=RPGQGFreedomArenaWorldGenerator.RPGQGArenaMode.Capture, rewardMultiplier=1.15f },
-            new RPGQGArenaCard { id="vide-survival", name="Vide", biome=2, layout=2, mode=RPGQGFreedomArenaWorldGenerator.RPGQGArenaMode.Survival, enemyMultiplier=1.35f, hazardMultiplier=1.2f, rewardMultiplier=1.3f },
-            new RPGQGArenaCard { id="ruines-boss", name="Ruines", biome=3, layout=1, mode=RPGQGFreedomArenaWorldGenerator.RPGQGArenaMode.Boss, enemyMultiplier=1.1f, rewardMultiplier=1.5f, objectiveCount=0 },
-            new RPGQGArenaCard { id="nature-skirmish", name="Nature", biome=4, layout=3, mode=RPGQGFreedomArenaWorldGenerator.RPGQGArenaMode.Skirmish, enemyMultiplier=0.9f, rewardMultiplier=1.05f, objectiveCount=0 }
+            new RPGQGArenaCard { id="cristal-capture", category="Terrain", name="Cristal", biome=1, layout=0, mode=RPGQGFreedomArenaWorldGenerator.RPGQGArenaMode.Capture, rewardMultiplier=1.15f },
+            new RPGQGArenaCard { id="vide-survival", category="Event", name="Vide", biome=2, layout=2, mode=RPGQGFreedomArenaWorldGenerator.RPGQGArenaMode.Survival, enemyMultiplier=1.35f, hazardMultiplier=1.2f, rewardMultiplier=1.3f },
+            new RPGQGArenaCard { id="ruines-boss", category="Boss", name="Ruines", biome=3, layout=1, mode=RPGQGFreedomArenaWorldGenerator.RPGQGArenaMode.Boss, enemyMultiplier=1.1f, rewardMultiplier=1.5f, objectiveCount=0 },
+            new RPGQGArenaCard { id="nature-skirmish", category="Terrain", name="Nature", biome=4, layout=3, mode=RPGQGFreedomArenaWorldGenerator.RPGQGArenaMode.Skirmish, enemyMultiplier=0.9f, rewardMultiplier=1.05f, objectiveCount=0 }
         };
 
         public string EquippedArenaCardId { get; private set; } = "cristal-capture";
         public event Action<string> ArenaCardChanged;
         public event Action<string> ArenaCardProgressed;
+        private readonly List<string> deck = new List<string>();
+        public IReadOnlyList<string> Deck { get { return deck; } }
 
         private void Awake()
         {
@@ -46,6 +49,7 @@ namespace RPGQGMMO
             if (cards.Find(c => c.id == EquippedArenaCardId) == null)
                 EquippedArenaCardId = cards[0].id;
             LoadAllCardProgress();
+            LoadDeck();
         }
 
         public bool EquipArenaCard(string cardId)
@@ -57,6 +61,29 @@ namespace RPGQGMMO
             PlayerPrefs.Save();
             ArenaCardChanged?.Invoke(EquippedArenaCardId);
             return true;
+        }
+
+        public bool SetDeckCard(int slot, string cardId)
+        {
+            if (slot < 0 || slot >= 5 || !IsUnlocked(cardId)) return false;
+            while (deck.Count < 5) deck.Add(EquippedArenaCardId);
+            if (cards.Find(c => c.id == cardId) == null) return false;
+            deck[slot] = cardId;
+            SaveDeck();
+            ArenaCardChanged?.Invoke(cardId);
+            return true;
+        }
+
+        private void SaveDeck()
+        {
+            for (int i = 0; i < 5; i++) PlayerPrefs.SetString("FA_DECK_" + i, i < deck.Count ? deck[i] : cards[0].id);
+            PlayerPrefs.Save();
+        }
+
+        private void LoadDeck()
+        {
+            deck.Clear();
+            for (int i = 0; i < 5; i++) deck.Add(PlayerPrefs.GetString("FA_DECK_" + i, cards[0].id));
         }
 
         public bool AddCardExperience(string cardId, int amount)
