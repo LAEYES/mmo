@@ -22,6 +22,8 @@ function WorldCanvas({ zoneId, waypoint, worldThreat, worldResources, exploratio
       const cameraY = Math.max(0, Math.min(39 - rows, position.current.y - Math.floor(rows / 2)));
       const zone = getZone(zoneId);
       const npcs = getZoneNpcs(zone, worldThreat, worldResources, explorationCount);
+      const eventPoint = getWorldEventPoint(worldEvent);
+      const eventDistance = Math.abs(position.current.x - eventPoint.x) + Math.abs(position.current.y - eventPoint.y);
       const signals: Array<{type:'poi'|'npc'|'event';name:string;x:number;y:number;sx:number;sy:number}> = [];
       zone.pointsOfInterest.forEach((name,index) => {
         const x = Math.floor((index + 1) * 60 / (zone.pointsOfInterest.length + 1));
@@ -29,6 +31,7 @@ function WorldCanvas({ zoneId, waypoint, worldThreat, worldResources, exploratio
         signals.push({type:'poi',name,x,y,sx:(x-cameraX)*tile+tile/2,sy:(y-cameraY)*tile+tile/2});
       });
       npcs.forEach(npc => signals.push({type:'npc',name:npc.name,x:npc.x,y:npc.y,sx:(npc.x-cameraX)*tile+tile/2,sy:(npc.y-cameraY)*tile+tile/2}));
+      if (eventDistance <= 8) signals.push({type:'event',name:worldEvent.title,x:eventPoint.x,y:eventPoint.y,sx:(eventPoint.x-cameraX)*tile+tile/2,sy:(eventPoint.y-cameraY)*tile+tile/2});
       const hit = signals.find(signal => Math.hypot(clickX-signal.sx, clickY-signal.sy) <= 14);
       if (hit) {
         onSignalSelect({type:hit.type,name:hit.name,x:hit.x,y:hit.y});
@@ -94,8 +97,7 @@ function WorldCanvas({ zoneId, waypoint, worldThreat, worldResources, exploratio
         ctx.fillStyle='#d8b56a'; ctx.beginPath(); ctx.arc(sx,sy,6,0,Math.PI*2); ctx.fill();
         ctx.fillStyle='#ead9ad'; ctx.font='10px Inter,sans-serif'; ctx.fillText(poi.name,sx+9,sy+3);
       });
-      const eventSeed = worldEvent.id.split(':').reduce((sum, part) => sum + Array.from(part).reduce((value, char) => value + char.charCodeAt(0), 0), 0);
-      const eventPoint = { x: 4 + (eventSeed % 52), y: 4 + (Math.floor(eventSeed / 52) % 32) };
+      const eventPoint = getWorldEventPoint(worldEvent);
       const eventDistance = Math.abs(position.current.x - eventPoint.x) + Math.abs(position.current.y - eventPoint.y);
       const eventProgress = getWorldEventProgress(worldEvent, worldEventAge);
       const eventPhase = getWorldEventPhase(worldEvent, worldEventAge).toUpperCase();
