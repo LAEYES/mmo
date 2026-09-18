@@ -29,13 +29,23 @@ namespace RPGQGMMO
 
         private void OnEnable()
         {
-            if (combat != null) combat.HealthChanged += RefreshHealth;
+            if (combat != null)
+            {
+                combat.HealthChanged += RefreshHealth;
+                combat.DamageDealt += OnDamageDealt;
+                combat.Died += OnDied;
+            }
             if (bridge != null) bridge.StateChanged += RefreshState;
         }
 
         private void OnDisable()
         {
-            if (combat != null) combat.HealthChanged -= RefreshHealth;
+            if (combat != null)
+            {
+                combat.HealthChanged -= RefreshHealth;
+                combat.DamageDealt -= OnDamageDealt;
+                combat.Died -= OnDied;
+            }
             if (bridge != null) bridge.StateChanged -= RefreshState;
         }
 
@@ -165,13 +175,31 @@ namespace RPGQGMMO
         private void RefreshAll()
         {
             if (combat != null) RefreshHealth(combat.health);
-            RefreshState("ready");
+            RefreshState(combatState);
         }
 
         private void RefreshHealth(int hp)
         {
             if (healthBar != null && combat != null)
                 healthBar.value = combat.maxHealth <= 0 ? 0 : (float)hp / combat.maxHealth;
+        }
+
+        private void OnDamageDealt(int amount)
+        {
+            ShowCombatState("COMBAT", 2f);
+            RefreshState("COMBAT");
+        }
+
+        private void OnDied()
+        {
+            ShowCombatState("MORT", 5f);
+            RefreshState("MORT");
+        }
+
+        private void ShowCombatState(string state, float duration)
+        {
+            combatState = state;
+            stateUntil = Time.unscaledTime + duration;
         }
 
         private void RefreshState(string state)
@@ -182,7 +210,7 @@ namespace RPGQGMMO
             if (Time.unscaledTime > stateUntil && combatState != "EXPLORATION") combatState = "EXPLORATION";
             statusText.text = "FREEDOMARENA  •  " + card.archetype.ToUpperInvariant() +
                 "  •  " + bridge.playerName + "    HP " + combat.health + "/" + combat.maxHealth +
-                "    XP " + xp + "    [" + state + "]";
+                "    XP " + xp + "    [" + combatState + "]";
             if (xpBar != null) xpBar.value = (xp % 100) / 100f;
         }
     }
