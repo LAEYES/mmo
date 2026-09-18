@@ -13,6 +13,8 @@ namespace RPGQGMMO
         private RPGQGCombatController combat;
         private Canvas canvas;
         private Text statusText;
+        private string combatState = "EXPLORATION";
+        private float stateUntil;
         private Slider healthBar;
         private Slider xpBar;
         private Button profileButton;
@@ -177,6 +179,7 @@ namespace RPGQGMMO
             if (statusText == null || bridge == null) return;
             RPGQGCardProfile card = bridge.GetCardProfile();
             int xp = PlayerPrefs.GetInt("RPGQG_XP", 0);
+            if (Time.unscaledTime > stateUntil && combatState != "EXPLORATION") combatState = "EXPLORATION";
             statusText.text = "FREEDOMARENA  •  " + card.archetype.ToUpperInvariant() +
                 "  •  " + bridge.playerName + "    HP " + combat.health + "/" + combat.maxHealth +
                 "    XP " + xp + "    [" + state + "]";
