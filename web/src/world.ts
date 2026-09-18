@@ -251,7 +251,11 @@ export function getFactionPressureLabel(pressure: FactionPressure): string {
   return 'Neutral frontier';
 }
 
-export type WorldEvent = { id: string; title: string; description: string; zoneId: string; faction: Zone['faction']; intensity: number; effect: 'threat' | 'resources' | 'encounter'; };
+export type WorldEvent = { id: string; title: string; description: string; zoneId: string; faction: Zone['faction']; intensity: number; effect: 'threat' | 'resources' | 'encounter'; duration: number; };
+export function getWorldEventLifetime(event: WorldEvent): number {
+  return Math.max(1, 6 - event.intensity);
+}
+
 
 export function generateWorldEvent(zone: Zone, worldThreat: number, worldResources: number, explorationCount: number, factionInfluence = 100): WorldEvent {
   const factionPressure = Math.max(0, Math.floor((100 - factionInfluence) / 25));
