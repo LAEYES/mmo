@@ -173,6 +173,29 @@ export function generateScenario(zone: Zone, playerLevel: number, explorationCou
   };
 }
 
+export type FactionNpc = {
+  id: string;
+  name: string;
+  faction: Zone['faction'];
+  role: 'guard' | 'scout' | 'merchant' | 'mystic';
+  x: number;
+  y: number;
+  activity: 'patrol' | 'trade' | 'observe' | 'defend';
+};
+
+export function getZoneNpcs(zone: Zone, worldThreat: number, worldResources: number, explorationCount: number): FactionNpc[] {
+  const faction = zone.faction === 'Neutral' ? 'Aegis' : zone.faction;
+  const role = faction === 'Aegis' ? 'guard' : faction === 'Nomads' ? 'scout' : 'mystic';
+  const name = faction === 'Aegis' ? 'Aegis Sentinel' : faction === 'Nomads' ? 'Nomad Scout' : 'Eclipse Mystic';
+  const activity = worldThreat >= 4 ? 'patrol' : worldResources >= 5 ? 'trade' : explorationCount % 2 === 0 ? 'observe' : 'defend';
+  const count = Math.min(4, 2 + Math.floor(worldThreat / 5));
+  return Array.from({length: count}, (_, i) => ({
+    id: zone.id + ':npc:' + i,
+    name: i === 0 ? name : name + ' ' + (i + 1),
+    faction, role, x: 8 + ((i * 17 + zone.level * 9) % 44), y: 10 + ((i * 11 + explorationCount * 3) % 25), activity
+  }));
+}
+
 export type ZoneEnvironment = {
   cycle: 'dawn' | 'day' | 'dusk' | 'night';
   weather: 'clear' | 'mist' | 'storm' | 'frost';
