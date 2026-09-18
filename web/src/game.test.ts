@@ -1,4 +1,5 @@
 import { createStarterPlayer, fuseCards, getCardFusionCost, getNextRarity, isValidPlayerState, normalizePlayer, upgradeCard, type Card } from './game';
+import { generateWorldEvent, getWorldEventPhase, getWorldEventPoint, getWorldEventProgress, zones } from './world';
 
 const assert=(condition:boolean,message:string)=>{if(!condition)throw new Error(message)};
 const base=createStarterPlayer('Test');
@@ -22,21 +23,13 @@ assert(upgraded.level===2&&upgraded.power===13&&upgraded.defense===7&&upgraded.v
 const legacy=normalizePlayer({...base,cards:[{...a,id:'x'},{...a,id:'x'}]});
 assert(!isValidPlayerState(legacy),'duplicate card ids should be rejected');
 console.log('RPGQG core tests passed');
-
-
-  it('keeps territorial event point deterministic for the same event id', () => {
-    const event = generateWorldEvent(zones[0], 4, 10, 2, 100);
-    expect(getWorldEventPoint(event)).toEqual(getWorldEventPoint(event));
-  });
-  it('clamps territorial event progress to its lifetime', () => {
-    const event = generateWorldEvent(zones[0], 4, 10, 2, 100);
-    expect(getWorldEventProgress(event, 0)).toBe(0);
-    expect(getWorldEventProgress(event, event.duration)).toBe(100);
-    expect(getWorldEventProgress(event, event.duration + 99)).toBe(100);
-  });
-  it('transitions territorial event phases from active to urgent to expiring', () => {
-    const event = { ...generateWorldEvent(zones[0], 4, 10, 2, 100), duration: 10 };
-    expect(getWorldEventPhase(event, 1)).toBe('active');
-    expect(getWorldEventPhase(event, 5)).toBe('urgent');
-    expect(getWorldEventPhase(event, 8)).toBe('expiring');
-  });
+const event=generateWorldEvent(zones[0],4,10,2,100);
+assert(getWorldEventPoint(event).x>=4 && getWorldEventPoint(event).x<=55,'event point x should stay in map bounds');
+assert(getWorldEventPoint(event).y>=4 && getWorldEventPoint(event).y<=35,'event point y should stay in map bounds');
+assert(getWorldEventProgress(event,0)===0,'event progress should start at zero');
+assert(getWorldEventProgress(event,event.duration)===100,'event progress should reach one hundred at expiry');
+assert(getWorldEventProgress(event,event.duration+99)===100,'event progress should clamp after expiry');
+const phased={...event,duration:10};
+assert(getWorldEventPhase(phased,1)==='active','event should start active');
+assert(getWorldEventPhase(phased,5)==='urgent','event should become urgent halfway');
+assert(getWorldEventPhase(phased,8)==='expiring','event should become expiring near expiry');
