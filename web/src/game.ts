@@ -31,9 +31,17 @@ export function grantArenaReward(state:PlayerState):PlayerState {
   const card:Card={id:`arena-${arenaWins}`,name:`Arena Reward #${arenaWins}`,...cardStats(arenaWins,rarity)};
   return {...state,arenaWins,victories:state.victories+1,xp,level,cards:[...state.cards,card]};
 }
+const CARD_XP_PER_LEVEL = 100;
 export function upgradeCard(card:Card,xpGain:number):Card {
-  const xp=Math.max(0,card.xp+Math.floor(xpGain));
-  return {...card,xp,level:1+Math.floor(xp/100),power:card.power+Math.floor(xpGain/25),defense:card.defense+Math.floor(xpGain/40),vitality:card.vitality+Math.floor(xpGain/20)};
+  const gain=Math.max(0,Math.floor(xpGain));
+  const previousLevel=card.level;
+  const xp=Math.max(0,card.xp+gain);
+  const level=Math.max(1,1+Math.floor(xp/CARD_XP_PER_LEVEL));
+  const levelsGained=Math.max(0,level-previousLevel);
+  return {...card,xp,level,
+    power:card.power+levelsGained*3,
+    defense:card.defense+levelsGained*2,
+    vitality:card.vitality+levelsGained*5};
 }
 export function equipCard(state:PlayerState,cardId:string|null):PlayerState {
   if (cardId === null) return {...state,equippedCardId:null};
