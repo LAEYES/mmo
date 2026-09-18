@@ -99,7 +99,10 @@ namespace RPGQGMMO
 
         private GameObject FindClosestObjective()
         {
-            GameObject[] objectives = GameObject.FindGameObjectsWithTag("StrategicObjective");
+            GameObject[] all = GameObject.FindObjectsOfType<GameObject>();
+            System.Collections.Generic.List<GameObject> objectives = new System.Collections.Generic.List<GameObject>();
+            foreach (GameObject candidate in all)
+                if (candidate.name.StartsWith("Stellacristal_Objective")) objectives.Add(candidate);
             GameObject closest = null;
             float best = float.MaxValue;
             foreach (GameObject objective in objectives)
