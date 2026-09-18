@@ -58,6 +58,10 @@ namespace RPGQGMMO
             if (quest == null)
                 quest = player.AddComponent<RPGQGQuestRuntime>();
 
+            RPGQGMMOModularUI modularUI = player.GetComponent<RPGQGMMOModularUI>();
+            if (modularUI == null)
+                modularUI = player.AddComponent<RPGQGMMOModularUI>();
+
             RPGQGMMOUI ui = player.GetComponent<RPGQGMMOUI>();
             if (ui == null)
                 ui = player.AddComponent<RPGQGMMOUI>();
