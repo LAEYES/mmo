@@ -77,6 +77,9 @@ namespace RPGQGMMO
             RPGQGCardGameRuntime cardGame = player.GetComponent<RPGQGCardGameRuntime>();
             if (cardGame == null) cardGame = player.AddComponent<RPGQGCardGameRuntime>();
 
+            RPGQGCardMMORuntime cardMMO = player.GetComponent<RPGQGCardMMORuntime>();
+            if (cardMMO == null) cardMMO = player.AddComponent<RPGQGCardMMORuntime>();
+
             RPGQGCharacterProfileUI profileUI = player.GetComponent<RPGQGCharacterProfileUI>();
             if (profileUI == null) profileUI = player.AddComponent<RPGQGCharacterProfileUI>();
 
