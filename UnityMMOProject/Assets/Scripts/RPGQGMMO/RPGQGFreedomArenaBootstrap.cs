@@ -10,6 +10,7 @@ namespace RPGQGMMO
     public sealed class RPGQGFreedomArenaBootstrap : MonoBehaviour
     {
         [SerializeField] private GameObject playerRoot;
+        [SerializeField] private bool generatePrototypeArena = true;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Initialize()
@@ -35,6 +36,8 @@ namespace RPGQGMMO
             }
 
             EnsurePlayerComponents(player);
+            if (generatePrototypeArena && GetComponent<RPGQGFreedomArenaWorldGenerator>() == null)
+                gameObject.AddComponent<RPGQGFreedomArenaWorldGenerator>();
         }
 
         private static void EnsurePlayerComponents(GameObject player)
