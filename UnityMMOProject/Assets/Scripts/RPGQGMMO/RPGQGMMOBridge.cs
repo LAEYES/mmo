@@ -56,6 +56,8 @@ namespace RPGQGMMO
         [Header("FreedomArena / RPGQG Card")]
         public string equippedCardId = "starter-gardien";
         public string playerName = "RPGQG Player";
+        public string PlayerName { get { return playerName; } }
+        public int Experience { get { return PlayerPrefs.GetInt("RPGQG_XP", 0); } }
 
         [Header("Persistence")]
         public bool autosaveState = true;
@@ -176,6 +178,7 @@ namespace RPGQGMMO
             }
 
             PlayerPrefs.SetString("RPGQG_CARD", equippedCardId);
+            PlayerPrefs.SetString("RPGQG_NAME", playerName);
             PlayerPrefs.Save();
             StateChanged?.Invoke("saved");
         }
@@ -193,6 +196,8 @@ namespace RPGQGMMO
 
             if (PlayerPrefs.HasKey("RPGQG_CARD"))
                 equippedCardId = PlayerPrefs.GetString("RPGQG_CARD", equippedCardId);
+            if (PlayerPrefs.HasKey("RPGQG_NAME"))
+                playerName = PlayerPrefs.GetString("RPGQG_NAME", playerName);
         }
     }
 }
