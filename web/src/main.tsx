@@ -178,6 +178,10 @@ function App() {
   const localFaction = currentZone.faction === 'Neutral' ? null : player.factionStates.find(f => f.faction === currentZone.faction);
   const factionPressure = getZoneFactionPressure(currentZone, localFaction?.influence ?? 100);
   const activeFactionInfluence = currentZone.faction === 'Neutral' ? 100 : (localFaction?.influence ?? 100);
+  const zoneModifiers = getZoneDynamicModifiers(currentZone, player.worldThreat, player.worldResources, player.factionStates.find(f=>f.faction===player.faction)?.influence??100);
+  const environmentLabels = { dawn: 'Aube', day: 'Jour', dusk: 'Crépuscule', night: 'Nuit' } as const;
+  const weatherLabels = { clear: 'Clair', mist: 'Brume', storm: 'Tempête', frost: 'Gel' } as const;
+  const equipped = getEquippedCard(player);
   const nearestPoi = getNearestPoi(currentZone, worldTile);
   const nearestNpc = zoneNpcs.reduce((nearest,npc)=>{const distance=Math.abs(npc.x-worldTile.x)+Math.abs(npc.y-worldTile.y);return distance<nearest.distance?{npc,distance}:nearest;},{npc:zoneNpcs[0],distance:Number.POSITIVE_INFINITY});
   const update = (next: typeof player) => { setPlayer(next); savePlayer(next); void syncPlayerRemote(next); };
