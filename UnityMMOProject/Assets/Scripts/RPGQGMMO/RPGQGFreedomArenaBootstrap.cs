@@ -38,6 +38,8 @@ namespace RPGQGMMO
             EnsurePlayerComponents(player);
             if (generatePrototypeArena && GetComponent<RPGQGFreedomArenaWorldGenerator>() == null)
                 gameObject.AddComponent<RPGQGFreedomArenaWorldGenerator>();
+            if (player.GetComponent<RPGQGStrategicArenaCombat>() == null)
+                player.AddComponent<RPGQGStrategicArenaCombat>();
         }
 
         private static void EnsurePlayerComponents(GameObject player)
