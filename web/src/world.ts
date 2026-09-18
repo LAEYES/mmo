@@ -60,9 +60,7 @@ export function getZoneConnections(id: string): Array<{ from: string; to: string
   return zone.neighbors.map(to => ({ from: zone.id, to }));
 }
 
-export function getZoneStatus(playerLevel: number, zone: Zone): 'current' | 'available' | 'locked' {
-  if (zone.id === zones.find(z => z.id === zone.id)?.id) {
-    return playerLevel >= zone.level ? 'available' : 'locked';
-  }
+export function getZoneStatus(playerLevel: number, zone: Zone, currentZoneId?: string): 'current' | 'available' | 'locked' {
+  if (zone.id === currentZoneId) return 'current';
   return playerLevel >= zone.level ? 'available' : 'locked';
 }
