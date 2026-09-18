@@ -94,6 +94,17 @@ function WorldCanvas({ zoneId, waypoint, worldThreat, worldResources, exploratio
         ctx.fillStyle='#d8b56a'; ctx.beginPath(); ctx.arc(sx,sy,6,0,Math.PI*2); ctx.fill();
         ctx.fillStyle='#ead9ad'; ctx.font='10px Inter,sans-serif'; ctx.fillText(poi.name,sx+9,sy+3);
       });
+      const eventPoint = { x: Math.min(58, Math.max(1, 10 + worldThreat * 2)), y: Math.min(38, Math.max(1, 8 + explorationCount * 2)) };
+      const eventDistance = Math.abs(position.current.x - eventPoint.x) + Math.abs(position.current.y - eventPoint.y);
+      if (eventDistance <= 8) {
+        ctx.strokeStyle='rgba(230,120,110,.55)'; ctx.lineWidth=2; ctx.setLineDash([5,5]);
+        const ex=(eventPoint.x-cameraX)*tile+tile/2, ey=(eventPoint.y-cameraY)*tile+tile/2;
+        if(ex>=0&&ey>=0&&ex<=rect.width&&ey<=rect.height){ctx.beginPath();ctx.arc(ex,ey,24,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#f0b0a0';ctx.font='600 9px Inter,sans-serif';ctx.fillText('EVENT',ex-18,ey-30);}
+        ctx.setLineDash([]);
+      }
+      ctx.fillStyle='#ef9f8f'; ctx.beginPath();
+      const ex=(eventPoint.x-cameraX)*tile+tile/2, ey=(eventPoint.y-cameraY)*tile+tile/2;
+      if(ex>=-10&&ey>=-10&&ex<=rect.width+10&&ey<=rect.height+10){ctx.arc(ex,ey,5+Math.min(4,worldThreat/3),0,Math.PI*2);ctx.fill();}
       const path = waypoint ? findTilePath(position.current, waypoint) : [];
       if (path.length > 1) {
         ctx.strokeStyle = '#d8b56a';
