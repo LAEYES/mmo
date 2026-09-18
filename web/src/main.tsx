@@ -33,9 +33,12 @@ function WorldCanvas({ zoneId, onTileMove }: { zoneId: string; onTileMove: (tile
       canvas.height = Math.max(1, Math.floor(rect.height * dpr));
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const tile = 32, cols = Math.ceil(rect.width / tile), rows = Math.ceil(rect.height / tile);
+      const cameraX = Math.max(0, position.current.x - Math.floor(cols / 2));
+      const cameraY = Math.max(0, position.current.y - Math.floor(rows / 2));
       ctx.clearRect(0, 0, rect.width, rect.height);
       for (let y=0;y<rows;y++) for (let x=0;x<cols;x++) {
-        const terrain = getTile(x, y, cols, rows);
+        const worldX = x + cameraX, worldY = y + cameraY;
+        const terrain = getTile(worldX, worldY);
         ctx.fillStyle = terrain.kind === 'water' ? '#132f4a' : terrain.kind === 'rock' ? '#30364a' : terrain.kind === 'wall' ? '#070b13' : ((x*17+y*31)%7<2 ? '#101b30' : '#0d1628');
         ctx.fillRect(x*tile,y*tile,tile,tile);
         if (terrain.kind !== 'ground') {
@@ -52,7 +55,7 @@ function WorldCanvas({ zoneId, onTileMove }: { zoneId: string; onTileMove: (tile
         ctx.fillStyle='#9db4e8'; ctx.beginPath(); ctx.arc(x,y,7,0,Math.PI*2); ctx.fill();
         ctx.fillStyle='#c9d7f5'; ctx.font='11px Inter,sans-serif'; ctx.fillText(name,x+10,y+4);
       });
-      const px=position.current.x*tile+tile/2, py=position.current.y*tile+tile/2;
+      const px=(position.current.x-cameraX)*tile+tile/2, py=(position.current.y-cameraY)*tile+tile/2;
       ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(px,py,9,0,Math.PI*2); ctx.fill();
       ctx.strokeStyle='#9db4e8'; ctx.stroke(); ctx.fillStyle='#c9d7f5'; ctx.font='600 11px Inter,sans-serif'; ctx.fillText('PLAYER',px-22,py+24);
     };
