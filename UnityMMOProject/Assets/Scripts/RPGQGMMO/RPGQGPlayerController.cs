@@ -3,7 +3,7 @@ using UnityEngine;
 namespace RPGQGMMO
 {
     /// <summary>
-    /// Third-person MMO controller for SpaceOutpost.
+    /// Third-person MMO controller for FreedomArena, with Android touch support.
     /// Uses Unity's legacy input API so the project does not require the Input System package.
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
@@ -13,6 +13,7 @@ namespace RPGQGMMO
         public float rotationSpeed = 12f;
         public float gravity = -20f;
         public Transform cameraTransform;
+        [HideInInspector] public MobileJoystick mobileJoystick;
 
         private CharacterController controller;
         private Vector3 verticalVelocity;
@@ -28,7 +29,7 @@ namespace RPGQGMMO
 
         private void Update()
         {
-            Vector2 input = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
+            Vector2 input = mobileJoystick != null ? mobileJoystick.Value : new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
             Vector3 forward = cameraTransform != null ? cameraTransform.forward : Vector3.forward;
             Vector3 right = cameraTransform != null ? cameraTransform.right : Vector3.right;
             forward.y = 0f;
