@@ -37,12 +37,16 @@ namespace RPGQGMMO
         private int skillPoints;
         private int strength;
         private int defense;
+        private bool skillDash;
+        private bool skillBarrier;
 
         public int Level { get { return level; } }
         public int XP { get { return xp; } }
         public int SkillPoints { get { return skillPoints; } }
         public int Strength { get { return strength; } }
         public int Defense { get { return defense; } }
+        public bool HasDash { get { return skillDash; } }
+        public bool HasBarrier { get { return skillBarrier; } }
 
         private void Awake()
         {
@@ -73,6 +77,8 @@ namespace RPGQGMMO
             if (skillPoints <= 0 || string.IsNullOrEmpty(skill)) return false;
             if (skill.Equals("strength", StringComparison.OrdinalIgnoreCase)) strength++;
             else if (skill.Equals("defense", StringComparison.OrdinalIgnoreCase)) defense++;
+            else if (skill.Equals("dash", StringComparison.OrdinalIgnoreCase)) skillDash = true;
+            else if (skill.Equals("barrier", StringComparison.OrdinalIgnoreCase)) skillBarrier = true;
             else return false;
             skillPoints--;
             Save();
@@ -106,6 +112,8 @@ namespace RPGQGMMO
             PlayerPrefs.SetInt("RPGQG_SKILL_POINTS", skillPoints);
             PlayerPrefs.SetInt("RPGQG_STRENGTH", strength);
             PlayerPrefs.SetInt("RPGQG_DEFENSE", defense);
+            PlayerPrefs.SetInt("RPGQG_SKILL_DASH", skillDash ? 1 : 0);
+            PlayerPrefs.SetInt("RPGQG_SKILL_BARRIER", skillBarrier ? 1 : 0);
             PlayerPrefs.Save();
         }
 
@@ -116,6 +124,8 @@ namespace RPGQGMMO
             skillPoints = Mathf.Max(0, PlayerPrefs.GetInt("RPGQG_SKILL_POINTS", 0));
             strength = Mathf.Max(0, PlayerPrefs.GetInt("RPGQG_STRENGTH", 0));
             defense = Mathf.Max(0, PlayerPrefs.GetInt("RPGQG_DEFENSE", 0));
+            skillDash = PlayerPrefs.GetInt("RPGQG_SKILL_DASH", 0) == 1;
+            skillBarrier = PlayerPrefs.GetInt("RPGQG_SKILL_BARRIER", 0) == 1;
         }
     }
 }
