@@ -12,6 +12,7 @@ namespace RPGQGMMO
         private GameObject panel;
         private InputField nameField;
         private Dropdown archetype;
+        private Dropdown hero;
         private RPGQGMMOBridge bridge;
 
         private void Start()
@@ -45,12 +46,15 @@ namespace RPGQGMMO
 
             nameField = Input("Nom", new Vector2(130,-120), new Vector2(350,58));
             nameField.text = bridge != null ? bridge.PlayerName : "RPGQG Player";
+            hero = null;
 
-            Label("Archétype de carte",20,new Vector2(-220,-210),new Vector2(300,50));
-            archetype = DropdownControl(new Vector2(130,-210),new Vector2(350,58));
+            Label("Héros par défaut",20,new Vector2(-220,-210),new Vector2(300,50));
+            hero = DropdownControl(new Vector2(130,-210),new Vector2(350,58));
+            Label("Archétype de carte",20,new Vector2(-220,-290),new Vector2(300,50));
+            archetype = DropdownControl(new Vector2(130,-290),new Vector2(350,58));
 
-            ButtonControl("ENTRER DANS FREEDOMARENA", new Vector2(0,-330), new Vector2(560,70), ApplyAndClose);
-            ButtonControl("ANNULER", new Vector2(0,-430), new Vector2(300,60), Close);
+            ButtonControl("ENTRER DANS FREEDOMARENA", new Vector2(0,-370), new Vector2(560,70), ApplyAndClose);
+            ButtonControl("ANNULER", new Vector2(0,-460), new Vector2(300,60), Close);
 
             panel.SetActive(false);
         }
@@ -61,7 +65,8 @@ namespace RPGQGMMO
             {
                 bridge.playerName = string.IsNullOrWhiteSpace(nameField.text) ? "RPGQG Player" : nameField.text.Trim();
                 string[] ids = { "starter-gardien", "starter-mage", "starter-rodeur" };
-                bridge.ApplyCard(ids[Mathf.Clamp(archetype.value,0,ids.Length-1)]);
+                int selected = archetype != null ? Mathf.Clamp(archetype.value, 0, ids.Length - 1) : 0;
+                bridge.ApplyCard(ids[selected]);
                 bridge.SaveLocalState();
             }
             Close();
@@ -100,6 +105,7 @@ namespace RPGQGMMO
             Text label=MakeText("Gardien",18); label.transform.SetParent(g.transform,false);
             label.rectTransform.offsetMin=new Vector2(18,0); label.rectTransform.offsetMax=new Vector2(-18,0);
             d.captionText=label; d.options.Add(new Dropdown.OptionData("Gardien")); d.options.Add(new Dropdown.OptionData("Mage")); d.options.Add(new Dropdown.OptionData("Rôdeur"));
+            d.value = 0;
             return d;
         }
 
