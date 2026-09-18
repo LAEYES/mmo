@@ -28,6 +28,25 @@ function WorldCanvas({ zoneId }: { zoneId: string }) {
         ctx.fillRect(x * tile, y * tile, tile, tile);
       }
       const zone = getZone(zoneId);
+      const poiPositions = zone.pointsOfInterest.map((name, index) => ({
+        name,
+        x: 24 + ((index + 1) * (rect.width - 48)) / (zone.pointsOfInterest.length + 1),
+        y: rect.height * (index % 2 === 0 ? 0.42 : 0.68)
+      }));
+      ctx.strokeStyle = '#526b9d';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      poiPositions.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
+      ctx.stroke();
+      poiPositions.forEach((p) => {
+        ctx.fillStyle = '#9db4e8';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#c9d7f5';
+        ctx.font = '11px Inter, sans-serif';
+        ctx.fillText(p.name, p.x + 10, p.y + 4);
+      });
       ctx.strokeStyle = '#3b5684';
       ctx.lineWidth = 2;
       ctx.strokeRect(12, 12, rect.width - 24, rect.height - 24);
