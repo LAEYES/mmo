@@ -51,7 +51,7 @@ namespace RPGQGMMO
         public bool EquipArenaCard(string cardId)
         {
             RPGQGArenaCard card = cards.Find(c => c.id == cardId);
-            if (card == null) return false;
+            if (card == null || !IsUnlocked(cardId)) return false;
             EquippedArenaCardId = card.id;
             PlayerPrefs.SetString("RPGQG_ARENA_CARD", EquippedArenaCardId);
             PlayerPrefs.Save();
@@ -118,7 +118,7 @@ namespace RPGQGMMO
             return true;
         }
 
-        public void ApplyAndGenerate()
+        public void UnlockCard(string cardId)\n        {\n            RPGQGArenaCard card = cards.Find(c => c.id == cardId);\n            if (card == null) return;\n            card.unlocked = true;\n            PlayerPrefs.SetInt("FA_CARD_UNLOCK_" + card.id, 1);\n            PlayerPrefs.Save();\n        }\n\n        public bool IsUnlocked(string cardId)\n        {\n            RPGQGArenaCard card = cards.Find(c => c.id == cardId);\n            return card != null && (card.unlocked || PlayerPrefs.GetInt("FA_CARD_UNLOCK_" + card.id, 0) == 1);\n        }\n\n        public void ApplyAndGenerate()
         {
             RPGQGFreedomArenaWorldGenerator arena = FindObjectOfType<RPGQGFreedomArenaWorldGenerator>();
             if (arena == null) return;
