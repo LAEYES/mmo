@@ -15,6 +15,10 @@ namespace RPGQGMMO
         public float enemyMultiplier = 1f;
         public float hazardMultiplier = 1f;
         public float rewardMultiplier = 1f;
+        public int rarity = 1;
+        public int level = 1;
+        public int experience;
+        public bool unlocked = true;
         public int objectiveCount = 2;
     }
 
@@ -34,12 +38,14 @@ namespace RPGQGMMO
 
         public string EquippedArenaCardId { get; private set; } = "cristal-capture";
         public event Action<string> ArenaCardChanged;
+        public event Action<string> ArenaCardProgressed;
 
         private void Awake()
         {
             EquippedArenaCardId = PlayerPrefs.GetString("RPGQG_ARENA_CARD", EquippedArenaCardId);
             if (cards.Find(c => c.id == EquippedArenaCardId) == null)
                 EquippedArenaCardId = cards[0].id;
+            LoadAllCardProgress();
         }
 
         public bool EquipArenaCard(string cardId)
@@ -51,6 +57,47 @@ namespace RPGQGMMO
             PlayerPrefs.Save();
             ArenaCardChanged?.Invoke(EquippedArenaCardId);
             return true;
+        }
+
+        public bool AddCardExperience(string cardId, int amount)
+        {
+            RPGQGArenaCard card = cards.Find(c => c.id == cardId);
+            if (card == null || amount <= 0) return false;
+            card.experience += amount;
+            int required = 100 + (card.level - 1) * 75;
+            while (card.experience >= required)
+            {
+                card.experience -= required;
+                card.level++;
+                required = 100 + (card.level - 1) * 75;
+            }
+            SaveCardProgress(card);
+            ArenaCardProgressed?.Invoke(card.id);
+            return true;
+        }
+
+        public int GetCardLevel(string cardId)
+        {
+            RPGQGArenaCard card = cards.Find(c => c.id == cardId);
+            return card == null ? 0 : card.level;
+        }
+
+        private void SaveCardProgress(RPGQGArenaCard card)
+        {
+            PlayerPrefs.SetInt("FA_CARD_LVL_" + card.id, card.level);
+            PlayerPrefs.SetInt("FA_CARD_XP_" + card.id, card.experience);
+            PlayerPrefs.Save();
+        }
+
+        private void LoadCardProgress(RPGQGArenaCard card)
+        {
+            card.level = Mathf.Max(1, PlayerPrefs.GetInt("FA_CARD_LVL_" + card.id, card.level));
+            card.experience = Mathf.Max(0, PlayerPrefs.GetInt("FA_CARD_XP_" + card.id, card.experience));
+        }
+
+        public void LoadAllCardProgress()
+        {
+            foreach (RPGQGArenaCard card in cards) LoadCardProgress(card);
         }
 
         public RPGQGArenaCard GetEquippedCard()
@@ -67,7 +114,7 @@ namespace RPGQGMMO
             arena.arenaMode = card.mode;
             arena.enemyCount = Mathf.Clamp(Mathf.RoundToInt(arena.enemyCount * card.enemyMultiplier), 2, arena.maxActiveEnemies);
             arena.hazardDensity = Mathf.Clamp01(arena.hazardDensity * card.hazardMultiplier);
-            arena.rewardMultiplier = Mathf.Clamp(arena.rewardMultiplier * card.rewardMultiplier, 0.5f, 3f);
+            arena.rewardMultiplier = Mathf.Clamp(arena.rewardMultiplier * card.rewardMultiplier * (1f + (card.level - 1) * 0.03f), 0.5f, 3f);
             return true;
         }
 
