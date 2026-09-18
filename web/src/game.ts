@@ -6,14 +6,14 @@ export type Card = {
   power: number; defense: number; vitality: number; xp: number; level: number;
 };
 
-export type PlayerState = {
+export type Quest = { id: string; title: string; description: string; progress: number; target: number; completed: boolean; };\n\nexport type PlayerState = {
   name: string; level: number; xp: number; faction: Faction; victories: number; cards: Card[];
-  zoneId: string; explorationCount: number; lastDiscovery: string; arenaWins: number; equippedCardId: string | null; fusionMaterials: number;
+  zoneId: string; explorationCount: number; lastDiscovery: string; arenaWins: number; equippedCardId: string | null; fusionMaterials: number; quests: Quest[];
 };
 
 export const factions: Faction[] = ['Aegis', 'Nomads', 'Eclipse'];
 export function createStarterPlayer(name = 'Arena Player'): PlayerState {
-  return { name, level:1, xp:0, faction:'Aegis', victories:0, cards:[], zoneId:'outpost', explorationCount:0, lastDiscovery:'', arenaWins:0, equippedCardId:null,fusionMaterials:0 };
+  return { name, level:1, xp:0, faction:'Aegis', victories:0, cards:[], zoneId:'outpost', explorationCount:0, lastDiscovery:'', arenaWins:0, equippedCardId:null,fusionMaterials:0,quests:[{id:'explore-1',title:'Frontier Survey',description:'Explore the frontier and discover 3 locations.',progress:0,target:3,completed:false}] };
 }
 function cardStats(wins:number, rarity:CardRarity):Omit<Card,'id'|'name'> {
   const m=rarity==='Legendary'?4:rarity==='Epic'?3:rarity==='Rare'?2:1;
@@ -25,6 +25,17 @@ export function grantVictory(state:PlayerState):PlayerState {
   const card:Card={id:`victory-${victories}`,name:`Arena Card #${victories}`,...cardStats(victories,rarity)};
   return {...state,victories,xp,level,cards:[...state.cards,card]};
 }
+export function updatePoiQuests(state: PlayerState, action: 'explore' | 'loot' | 'encounter'): PlayerState {
+  return {
+    ...state,
+    quests: state.quests.map(quest => {
+      if (quest.completed || quest.id !== 'explore-1' || action !== 'explore') return quest;
+      const progress = Math.min(quest.target, quest.progress + 1);
+      return { ...quest, progress, completed: progress >= quest.target };
+    })
+  };
+}
+
 export function applyPoiReward(state: PlayerState, action: 'explore' | 'loot' | 'encounter'): PlayerState {
   const xpGain = action === 'explore' ? 15 : action === 'loot' ? 10 : 20;
   const materialsGain = action === 'loot' ? 1 : 0;
@@ -34,6 +45,7 @@ export function applyPoiReward(state: PlayerState, action: 'explore' | 'loot' | 
     xp,
     level: 1 + Math.floor(xp / 100),
     explorationCount: action === 'explore' ? state.explorationCount + 1 : state.explorationCount,
+    quests: updatePoiQuests(state, action).quests,
     fusionMaterials: state.fusionMaterials + materialsGain
   };
 }
@@ -80,6 +92,7 @@ export function normalizePlayer(input:Partial<PlayerState>):PlayerState {
   const cards=Array.isArray(input.cards)?input.cards.map(normalizeCard).filter((c):c is Card=>c!==null):[];
   const equipped=typeof input.equippedCardId==='string'&&cards.some(c=>c.id===input.equippedCardId)?input.equippedCardId:null;
   const fusionMaterials=typeof input.fusionMaterials==='number'&&Number.isFinite(input.fusionMaterials)?Math.max(0,Math.floor(input.fusionMaterials)):s.fusionMaterials;
+  const quests=Array.isArray(input.quests)?input.quests.filter(q=>q&&typeof q==='object').map(q=>{const quest=q as Quest;const progress=Math.max(0,Math.floor(typeof quest.progress==='number'?quest.progress:0));const target=Math.max(1,Math.floor(typeof quest.target==='number'?quest.target:1));return {id:String(quest.id||''),title:String(quest.title||''),description:String(quest.description||''),progress:Math.min(progress,target),target,completed:Boolean(quest.completed)||progress>=target};}):s.quests;
   return {...s,...input,name:typeof input.name==='string'&&input.name.trim()?input.name.trim().slice(0,24):s.name,
     level:typeof input.level==='number'&&Number.isFinite(input.level)?Math.max(1,Math.floor(input.level)):s.level,
     xp:typeof input.xp==='number'&&Number.isFinite(input.xp)?Math.max(0,Math.floor(input.xp)):s.xp,
@@ -88,7 +101,7 @@ export function normalizePlayer(input:Partial<PlayerState>):PlayerState {
     cards,zoneId:typeof input.zoneId==='string'?input.zoneId:s.zoneId,
     explorationCount:typeof input.explorationCount==='number'&&Number.isFinite(input.explorationCount)?Math.max(0,Math.floor(input.explorationCount)):s.explorationCount,
     lastDiscovery:typeof input.lastDiscovery==='string'?input.lastDiscovery.slice(0,200):s.lastDiscovery,
-    arenaWins:typeof input.arenaWins==='number'&&Number.isFinite(input.arenaWins)?Math.max(0,Math.floor(input.arenaWins)):s.arenaWins,equippedCardId:equipped,fusionMaterials};
+    arenaWins:typeof input.arenaWins==='number'&&Number.isFinite(input.arenaWins)?Math.max(0,Math.floor(input.arenaWins)):s.arenaWins,equippedCardId:equipped,fusionMaterials,quests};
 }
 export function validatePlayerState(state:PlayerState):string[] {
   const errors:string[]=[];
