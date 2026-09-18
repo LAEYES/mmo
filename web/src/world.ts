@@ -145,3 +145,30 @@ export function interactWithPoi(zone: Zone, poiIndex: number): PoiInteraction | 
   const message = action === 'explore' ? 'Zone explored.' : action === 'loot' ? 'A resource cache was discovered.' : 'An encounter is nearby.';
   return { name, action, message };
 }
+
+export type Scenario = {
+  id: string;
+  title: string;
+  description: string;
+  threat: number;
+  choices: string[];
+};
+
+export function generateScenario(zone: Zone, playerLevel: number, explorationCount: number, seed = 0): Scenario {
+  const phase = Math.floor((explorationCount + playerLevel + seed) / 3) % 4;
+  const threat = Math.max(1, zone.level + phase + Math.floor(explorationCount / 5));
+  const templates = [
+    ['Frontier Signal', 'A changing signal pattern suggests that another faction is moving through the area.', ['Investigate the signal', 'Keep moving']],
+    ['Resource Conflict', 'A resource cache has become the center of a dispute between local groups.', ['Secure the cache', 'Observe the conflict']],
+    ['Eclipse Anomaly', 'An unstable energy anomaly changes the conditions around a nearby point of interest.', ['Study the anomaly', 'Avoid the anomaly']],
+    ['Patrol Shift', 'Patrol routes have changed since your last visit, altering the safest path through the zone.', ['Scout the new route', 'Take the longer route']]
+  ] as const;
+  const [title, description, choices] = templates[phase];
+  return {
+    id: zone.id + ':' + phase + ':' + Math.floor(explorationCount / 3),
+    title,
+    description,
+    threat,
+    choices: [...choices]
+  };
+}
