@@ -173,6 +173,23 @@ export function generateScenario(zone: Zone, playerLevel: number, explorationCou
   };
 }
 
+export type ZoneEnvironment = {
+  cycle: 'dawn' | 'day' | 'dusk' | 'night';
+  weather: 'clear' | 'mist' | 'storm' | 'frost';
+  atmosphere: number;
+};
+
+export function getZoneEnvironment(zone: Zone, worldThreat: number, worldResources: number, explorationCount: number): ZoneEnvironment {
+  const cycleIndex = Math.abs(explorationCount + zone.level + worldThreat) % 4;
+  const cycle = (['dawn', 'day', 'dusk', 'night'] as const)[cycleIndex];
+  const weather = zone.level >= 3 && worldThreat >= 4 ? 'storm'
+    : zone.level >= 3 ? 'frost'
+    : worldThreat >= 4 ? 'mist'
+    : worldResources >= 6 ? 'clear'
+    : 'mist';
+  return { cycle, weather, atmosphere: Math.min(5, Math.floor(worldThreat / 2) + Math.floor(zone.level / 2)) };
+}
+
 export function getZoneDynamicModifiers(zone: Zone, worldThreat: number, worldResources: number, factionInfluence: number): { threat: number; resourceYield: number; encounterChance: number } {
   const factionPressure = Math.max(0, Math.floor((100 - factionInfluence) / 25));
   return {
