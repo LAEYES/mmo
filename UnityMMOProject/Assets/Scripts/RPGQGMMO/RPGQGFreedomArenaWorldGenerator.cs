@@ -39,6 +39,10 @@ namespace RPGQGMMO
         public int maxActiveEnemies = 8;
         public float respawnDelay = 5f;
         public float rewardMultiplier = 1f;
+
+        [Header("Arena Mode")]
+        public RPGQGArenaMode arenaMode = RPGQGArenaMode.Capture;
+        public int bossHealthMultiplier = 4;
         private Vector3 lastSpawnPoint;
 
         [Header("Gameplay")]
@@ -47,6 +51,8 @@ namespace RPGQGMMO
         private System.Random random;
         private float nextEvolution;
         private RPGQGMMOBridge bridge;
+
+        public enum RPGQGArenaMode { Capture, Survival, Boss, Skirmish }
 
         private void Start()
         {
@@ -152,8 +158,11 @@ namespace RPGQGMMO
             CreateFloor(arena.transform);
             CreatePortal(arena.transform, new Vector3(0f, 0f, 0f));
             float spread = Mathf.Lerp(7f, 14f, objectiveSpread);
-            CreateObjective(arena.transform, new Vector3(0f, 0.1f, spread));
-            CreateObjective(arena.transform, new Vector3(spread, 0.1f, 0f));
+            if (arenaMode == RPGQGArenaMode.Capture)
+            {
+                CreateObjective(arena.transform, new Vector3(0f, 0.1f, spread));
+                CreateObjective(arena.transform, new Vector3(spread, 0.1f, 0f));
+            }
             lastSpawnPoint = GetPlayerSpawnPoint();
             CreateHazards(arena.transform, random);
             CreateObstacles(arena.transform);
@@ -236,6 +245,14 @@ namespace RPGQGMMO
                 ai.attackPower = 8 + random.Next(0, 5);
                 ai.detectionRange = 16f;
                 ai.attackRange = 2.4f;
+                if (arenaMode == RPGQGArenaMode.Survival) ai.maxHealth = Mathf.RoundToInt(ai.maxHealth * 1.15f);
+                if (arenaMode == RPGQGArenaMode.Boss && i == 0)
+                {
+                    ai.enemyId = "Gardien de l’Arena";
+                    ai.maxHealth *= bossHealthMultiplier;
+                    ai.attackPower = Mathf.RoundToInt(ai.attackPower * 1.5f);
+                    ai.detectionRange = 24f;
+                }
             }
         }
     }
