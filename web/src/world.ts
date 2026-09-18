@@ -236,15 +236,26 @@ export function getZoneDynamicModifiers(zone: Zone, worldThreat: number, worldRe
 
 export type WorldEvent = { id: string; title: string; description: string; zoneId: string; faction: Zone['faction']; intensity: number; effect: 'threat' | 'resources' | 'encounter'; };
 
-export function generateWorldEvent(zone: Zone, worldThreat: number, worldResources: number, explorationCount: number): WorldEvent {
-  const intensity = Math.max(1, Math.min(5, Math.floor((worldThreat + explorationCount) / 4) + 1));
-  const effect = worldResources < 3 ? 'resources' : worldThreat >= 4 ? 'threat' : 'encounter';
+export function generateWorldEvent(zone: Zone, worldThreat: number, worldResources: number, explorationCount: number, factionInfluence = 100): WorldEvent {
+  const factionPressure = Math.max(0, Math.floor((100 - factionInfluence) / 25));
+  const effectiveThreat = Math.max(1, worldThreat + factionPressure);
+  const intensity = Math.max(1, Math.min(5, Math.floor((effectiveThreat + explorationCount) / 4) + 1));
+  const effect = worldResources < 3 && factionPressure < 2 ? 'resources' : effectiveThreat >= 5 ? 'threat' : 'encounter';
   const titles = effect === 'resources' ? ['Supply Rush', 'Hidden Cache'] : effect === 'threat' ? ['Rising Patrols', 'Frontier Alert'] : ['Wandering Hunters', 'Unstable Encounter'];
-  const index = (explorationCount + worldThreat + worldResources) % titles.length;
+  const index = (explorationCount + effectiveThreat + worldResources + factionPressure) % titles.length;
+  const factionName = zone.faction === 'Neutral' ? 'local groups' : zone.faction;
   return {
-    id: zone.id + ':event:' + explorationCount + ':' + worldThreat,
+    id: zone.id + ':event:' + explorationCount + ':' + effectiveThreat + ':' + factionPressure,
     title: titles[index],
-    description: effect === 'resources' ? 'Resource activity is changing the local frontier.' : effect === 'threat' ? 'Local pressure is increasing and patrols are becoming more active.' : 'A mobile encounter has appeared near the current zone.',
+    description: effect === 'resources'
+      ? 'Resource activity is changing the local frontier.'
+      : effect === 'threat'
+        ? factionPressure > 0
+          ? factionName + ' influence is unstable and patrol pressure is increasing.'
+          : 'Local pressure is increasing and patrols are becoming more active.'
+        : factionPressure > 0
+          ? factionName + ' activity is reshaping the encounter routes.'
+          : 'A mobile encounter has appeared near the current zone.',
     zoneId: zone.id,
     faction: zone.faction,
     intensity,
