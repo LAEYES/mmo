@@ -44,7 +44,7 @@ function WorldCanvas({ zoneId, waypoint, worldThreat, worldResources, exploratio
     };
     canvas.addEventListener('pointerdown', onPointer);
     return () => canvas.removeEventListener('pointerdown', onPointer);
-  }, [onTileMove, onSignalSelect, zoneId, worldThreat, worldResources, explorationCount]);
+  }, [onTileMove, onSignalSelect, zoneId, worldThreat, worldResources, explorationCount, worldEvent, worldEventAge]);
   useEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
