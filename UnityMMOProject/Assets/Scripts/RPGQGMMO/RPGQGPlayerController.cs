@@ -21,6 +21,7 @@ namespace RPGQGMMO
         private float dashTime;
         private float barrierTime;
         private float ultimateTime;
+        private float baseMoveSpeed = 5f;
 
         public Vector3 WorldPosition { get { return transform.position; } }
 
@@ -28,12 +29,22 @@ namespace RPGQGMMO
         {
             controller = GetComponent<CharacterController>();
             rpg = GetComponent<RPGQGCardMMORuntime>();
+            baseMoveSpeed = moveSpeed;
             if (cameraTransform == null && Camera.main != null)
                 cameraTransform = Camera.main.transform;
         }
 
+        private void ApplyHeroSpeed()
+        {
+            RPGQGMMOBridge bridge = GetComponent<RPGQGMMOBridge>();
+            if (bridge == null) return;
+            RPGQGCardProfile profile = bridge.GetCardProfile();
+            moveSpeed = profile.moveSpeed > 0f ? profile.moveSpeed : baseMoveSpeed;
+        }
+
         private void Update()
         {
+            ApplyHeroSpeed();
             dashTime = Mathf.Max(0f, dashTime - Time.deltaTime);
             barrierTime = Mathf.Max(0f, barrierTime - Time.deltaTime);
             ultimateTime = Mathf.Max(0f, ultimateTime - Time.deltaTime);
