@@ -5,7 +5,7 @@ export type Quest = { id:string; title:string; description:string; progress:numb
 export type WorldFactionState = { faction: Faction; influence: number; reputation: number; };
 export type PlayerState = { name:string; level:number; xp:number; faction:Faction; victories:number; cards:Card[]; zoneId:string; explorationCount:number; lastDiscovery:string; arenaWins:number; equippedCardId:string|null; fusionMaterials:number; quests:Quest[]; worldThreat:number; worldResources:number; factionStates:WorldFactionState[]; };
 export const factions:Faction[]=['Aegis','Nomads','Eclipse'];
-export function createStarterPlayer(name='Arena Player'):PlayerState{return{name,level:1,xp:0,faction:'Aegis',victories:0,cards:[],zoneId:'outpost',explorationCount:0,lastDiscovery:'',arenaWins:0,equippedCardId:null,fusionMaterials:0,quests:[{id:'explore-1',title:'Frontier Survey',description:'Explore the frontier and discover 3 locations.',progress:0,target:3,completed:false,rewardClaimed:false},{id:'scenario-1',title:'Signal Hunter',description:'Choose the risky scenario path 3 times.',progress:0,target:3,completed:false,rewardClaimed:false},{id:'survival-1',title:'Safe Passage',description:'Choose the cautious scenario path 3 times.',progress:0,target:3,completed:false,rewardClaimed:false}],worldThreat:1,worldResources:0,factionStates:factions.map(f=>({faction:f,influence:100,reputation:f==='Aegis'?10:0}))};}
+export function createStarterPlayer(name='Arena Player'):PlayerState{return{name,level:1,xp:0,faction:'Aegis',victories:0,cards:[],zoneId:'outpost',explorationCount:0,lastDiscovery:'',arenaWins:0,equippedCardId:null,fusionMaterials:0,quests:[{id:'explore-1',title:'Frontier Survey',description:'Explore the frontier and discover 3 locations.',progress:0,target:3,completed:false,rewardClaimed:false},{id:'scenario-1',title:'Signal Hunter',description:'Choose the risky scenario path 3 times.',progress:0,target:3,completed:false,rewardClaimed:false},{id:'survival-1',title:'Safe Passage',description:'Choose the cautious scenario path 3 times.',progress:0,target:3,completed:false,rewardClaimed:false},{id:'combat-1',title:'Frontier Defender',description:'Win 3 encounters to stabilize the frontier.',progress:0,target:3,completed:false,rewardClaimed:false}],worldThreat:1,worldResources:0,factionStates:factions.map(f=>({faction:f,influence:100,reputation:f==='Aegis'?10:0}))};}
 function cardStats(wins:number,rarity:CardRarity):Omit<Card,'id'|'name'>{const m=rarity==='Legendary'?4:rarity==='Epic'?3:rarity==='Rare'?2:1;return{rarity,power:12+wins*2*m,defense:6+wins*m,vitality:30+wins*4*m,xp:0,level:1};}
 export function grantVictory(state:PlayerState):PlayerState{const victories=state.victories+1,xp=state.xp+25,level=1+Math.floor(xp/100),rarity:CardRarity=victories%10===0?'Epic':victories%5===0?'Rare':'Common',card:Card={id:`victory-${victories}`,name:`Arena Card #${victories}`,...cardStats(victories,rarity)};return{...state,victories,xp,level,cards:[...state.cards,card]};}
 export function updatePoiQuests(state:PlayerState,action:'explore'|'loot'|'encounter'):PlayerState{return{...state,quests:state.quests.map(q=>{if(q.completed||q.id!=='explore-1'||action!=='explore')return q;const progress=Math.min(q.target,q.progress+1);return{...q,progress,completed:progress>=q.target};})};}
@@ -44,6 +44,27 @@ export function grantVictory(state:PlayerState):PlayerState{const victories=stat
 export function updatePoiQuests(state:PlayerState,action:'explore'|'loot'|'encounter'):PlayerState{return{...state,quests:state.quests.map(q=>{if(q.completed||q.id!=='explore-1'||action!=='explore')return q;const progress=Math.min(q.target,q.progress+1);return{...q,progress,completed:progress>=q.target};})};}
 export function applyPoiReward(state:PlayerState,action:'explore'|'loot'|'encounter'):PlayerState{const xp=state.xp+(action==='explore'?15:action==='loot'?10:20),questState=updatePoiQuests(state,action),completedNow=questState.quests.some(q=>q.id==='explore-1'&&q.completed&&!q.rewardClaimed);return{...state,xp,level:1+Math.floor(xp/100),explorationCount:action==='explore'?state.explorationCount+1:state.explorationCount,fusionMaterials:state.fusionMaterials+(action==='loot'?1:0)+(completedNow?3:0),quests:questState.quests.map(q=>q.id==='explore-1'&&completedNow?{...q,rewardClaimed:true}:q)};}
 export function applyScenarioChoice(state:PlayerState,choiceIndex:number):PlayerState{const risk=choiceIndex===0,xpGain=risk?10:5,questId=risk?'scenario-1':'survival-1';let reward=0;const quests=state.quests.map(q=>{if(q.id!==questId||q.completed)return q;const progress=Math.min(q.target,q.progress+1),completed=progress>=q.target;return{...q,progress,completed,rewardClaimed:q.rewardClaimed};});const completedQuest=quests.find(q=>q.id===questId&&q.completed&&!q.rewardClaimed);if(completedQuest)reward=3;const xp=state.xp+xpGain+reward*10;return{...state,xp,level:1+Math.floor(xp/100),worldThreat:Math.max(1,state.worldThreat+(risk?1:-1)),worldResources:Math.max(0,state.worldResources+(risk?1:2))+reward,quests:quests.map(q=>q.id===questId&&completedQuest?{...q,rewardClaimed:true}:q)};}
+export function applyCombatOutcome(state: PlayerState, victory: boolean, enemyLevel: number): PlayerState {
+  if (!victory) return state;
+  const xpGain = 20 + Math.max(1, enemyLevel) * 10;
+  const xp = state.xp + xpGain;
+  const quests = state.quests.map(q => {
+    if (q.id !== 'combat-1' || q.completed) return q;
+    const progress = Math.min(q.target, q.progress + 1);
+    return { ...q, progress, completed: progress >= q.target, rewardClaimed: q.rewardClaimed };
+  });
+  const completed = quests.find(q => q.id === 'combat-1' && q.completed && !q.rewardClaimed);
+  return {
+    ...state,
+    xp,
+    level: 1 + Math.floor(xp / 100),
+    victories: state.victories + 1,
+    worldThreat: Math.max(1, state.worldThreat - 1),
+    worldResources: state.worldResources + 1 + (completed ? 3 : 0),
+    quests: quests.map(q => q.id === 'combat-1' && completed ? { ...q, rewardClaimed: true } : q)
+  };
+}
+
 export function grantArenaReward(state:PlayerState):PlayerState{const arenaWins=state.arenaWins+1,xp=state.xp+40+arenaWins*5,rarity:CardRarity=arenaWins%10===0?'Epic':arenaWins%3===0?'Rare':'Common',card:Card={id:`arena-${arenaWins}`,name:`Arena Reward #${arenaWins}`,...cardStats(arenaWins,rarity)};return{...state,arenaWins,victories:state.victories+1,xp,level:1+Math.floor(xp/100),cards:[...state.cards,card],fusionMaterials:state.fusionMaterials+1};}
 const CARD_XP_PER_LEVEL=100;
 export function upgradeCard(card:Card,xpGain:number):Card{const gain=Math.max(0,Math.floor(xpGain)),previousLevel=card.level,xp=Math.max(0,card.xp+gain),level=Math.max(1,1+Math.floor(xp/CARD_XP_PER_LEVEL)),levelsGained=Math.max(0,level-previousLevel);return{...card,xp,level,power:card.power+levelsGained*3,defense:card.defense+levelsGained*2,vitality:card.vitality+levelsGained*5};}
