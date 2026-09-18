@@ -134,3 +134,14 @@ export function findTilePath(start: TilePosition, target: TilePosition, maxSteps
   }
   return [];
 }
+
+export type PoiAction = 'explore' | 'loot' | 'encounter';
+export type PoiInteraction = { name: string; action: PoiAction; message: string };
+
+export function interactWithPoi(zone: Zone, poiIndex: number): PoiInteraction | null {
+  const name = zone.pointsOfInterest[poiIndex];
+  if (!name) return null;
+  const action: PoiAction = poiIndex % 3 === 0 ? 'explore' : poiIndex % 3 === 1 ? 'loot' : 'encounter';
+  const message = action === 'explore' ? 'Zone explored.' : action === 'loot' ? 'A resource cache was discovered.' : 'An encounter is nearby.';
+  return { name, action, message };
+}
