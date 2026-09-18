@@ -147,11 +147,20 @@ namespace RPGQGMMO
 
         public void UnlockCard(string cardId)
         {
-            RPGQGArenaCard card = cards.Find(c => c.id == cardId);\n            if (card == null) return;
-            card.unlocked = true;\n            PlayerPrefs.SetInt("FA_CARD_UNLOCK_" + card.id, 1);\n            PlayerPrefs.Save();
+            RPGQGArenaCard card = cards.Find(c => c.id == cardId);
+            if (card == null) return;
+            card.unlocked = true;
+            PlayerPrefs.SetInt("FA_CARD_UNLOCK_" + card.id, 1);
+            PlayerPrefs.Save();
         }
 
-        public bool IsUnlocked(string cardId)\n        {\n            RPGQGArenaCard card = cards.Find(c => c.id == cardId);\n            return card != null && (card.unlocked || PlayerPrefs.GetInt("FA_CARD_UNLOCK_" + card.id, 0) == 1);\n        }\n\n        public string BuildSynergyProfile()
+        public bool IsUnlocked(string cardId)
+        {
+            RPGQGArenaCard card = cards.Find(c => c.id == cardId);
+            return card != null && (card.unlocked || PlayerPrefs.GetInt("FA_CARD_UNLOCK_" + card.id, 0) == 1);
+        }
+
+        public string BuildSynergyProfile()
         {
             int terrain = 0, events = 0, bosses = 0;
             float enemy = 1f, hazard = 1f, reward = 1f;
