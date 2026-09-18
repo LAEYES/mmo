@@ -96,7 +96,7 @@ export function validatePlayerState(state:PlayerState):string[] {
   return errors;
 }
 export function isValidPlayerState(state:PlayerState):boolean { return validatePlayerState(state).length===0; }
-export function savePlayer(state:PlayerState):void { localStorage.setItem(STORAGE_KEY,JSON.stringify(normalizePlayer(state))); }
+export function savePlayer(state:PlayerState):void {\n  const normalized=normalizePlayer(state);\n  if(!isValidPlayerState(normalized)) return;\n  localStorage.setItem(STORAGE_KEY,JSON.stringify(normalized));\n}
 export function clearPlayerSave():void { localStorage.removeItem(STORAGE_KEY); }
 
 const rarityOrder: CardRarity[] = ['Common','Rare','Epic','Legendary'];
