@@ -35,8 +35,14 @@ function WorldCanvas({ zoneId, onTileMove }: { zoneId: string; onTileMove: (tile
       const tile = 32, cols = Math.ceil(rect.width / tile), rows = Math.ceil(rect.height / tile);
       ctx.clearRect(0, 0, rect.width, rect.height);
       for (let y=0;y<rows;y++) for (let x=0;x<cols;x++) {
-        ctx.fillStyle = (x*17+y*31)%7<2 ? '#101b30' : '#0d1628';
+        const terrain = getTile(x, y, cols, rows);
+        ctx.fillStyle = terrain.kind === 'water' ? '#132f4a' : terrain.kind === 'rock' ? '#30364a' : terrain.kind === 'wall' ? '#070b13' : ((x*17+y*31)%7<2 ? '#101b30' : '#0d1628');
         ctx.fillRect(x*tile,y*tile,tile,tile);
+        if (terrain.kind !== 'ground') {
+          ctx.strokeStyle = terrain.kind === 'wall' ? '#202b40' : '#53627b';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x*tile+1,y*tile+1,tile-2,tile-2);
+        }
       }
       const zone=getZone(zoneId);
       ctx.strokeStyle='#3b5684'; ctx.lineWidth=2; ctx.strokeRect(12,12,rect.width-24,rect.height-24);
