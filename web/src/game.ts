@@ -21,13 +21,17 @@ export function applyNpcInteraction(state: PlayerState, faction: Faction, action
     const progress = Math.min(q.target, q.progress + 1);
     return { ...q, progress, completed: progress >= q.target };
   });
-  const completedLiaison = liaisonQuest && !liaisonQuest.completed && quests.some(q => q.id === 'faction-1' && q.completed);
+  const completedLiaison = Boolean(liaisonQuest && !liaisonQuest.completed && quests.some(q => q.id === 'faction-1' && q.completed));
   const questXp = completedLiaison ? 15 : 0;
   const questResources = completedLiaison ? 3 : 0;
   const totalXp = state.xp + xpGain + questXp;
   const factionStates = state.factionStates.map(f => f.faction === faction
     ? { ...f, influence: Math.max(0, Math.min(200, f.influence + (action === 'patrol' ? 3 : 2))), reputation: f.reputation + (action === 'dialogue' ? 2 : 1) }
     : f);
+  const eventQuest = action === 'patrol' && !state.quests.some(q => q.id === 'patrol-1')
+    ? { id:'patrol-1', title:'Patrol Alert', description:'Respond to a faction patrol escalation.', progress:0, target:1, completed:false, rewardClaimed:false }
+    : null;
+  const withQuest = eventQuest ? [...quests, eventQuest] : quests;
   return {
     ...state,
     xp: totalXp,
@@ -35,10 +39,9 @@ export function applyNpcInteraction(state: PlayerState, faction: Faction, action
     worldResources: state.worldResources + resourceGain + questResources,
     worldThreat: Math.max(1, state.worldThreat + threatDelta),
     factionStates,
-    quests: quests.map(q => q.id === 'faction-1' && completedLiaison ? { ...q, rewardClaimed: true } : q)
+    quests: withQuest.map(q => q.id === 'faction-1' && completedLiaison ? { ...q, rewardClaimed: true } : q)
   };
 }
-
 export function applyWorldEventState(state: PlayerState, effect: 'threat' | 'resources' | 'encounter', intensity: number, eventFaction?: Faction | 'Neutral'): PlayerState {
   const power = Math.max(1, Math.floor(intensity));
   const worldThreat = effect === 'threat' ? state.worldThreat + power : effect === 'resources' ? Math.max(1, state.worldThreat - Math.max(1, Math.floor(power / 2))) : state.worldThreat + 1;
