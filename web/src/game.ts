@@ -66,7 +66,8 @@ export function normalizePlayer(input:Partial<PlayerState>):PlayerState {
   const s=createStarterPlayer();
   const cards=Array.isArray(input.cards)?input.cards.map(normalizeCard).filter((c):c is Card=>c!==null):[];
   const equipped=typeof input.equippedCardId==='string'&&cards.some(c=>c.id===input.equippedCardId)?input.equippedCardId:null;
-  const fusionMaterials=typeof input.fusionMaterials==='number'&&Number.isFinite(input.fusionMaterials)?Math.max(0,Math.floor(input.fusionMaterials)):s.fusionMaterials;\n  return {...s,...input,name:typeof input.name==='string'&&input.name.trim()?input.name.trim().slice(0,24):s.name,
+  const fusionMaterials=typeof input.fusionMaterials==='number'&&Number.isFinite(input.fusionMaterials)?Math.max(0,Math.floor(input.fusionMaterials)):s.fusionMaterials;
+  return {...s,...input,name:typeof input.name==='string'&&input.name.trim()?input.name.trim().slice(0,24):s.name,
     level:typeof input.level==='number'&&Number.isFinite(input.level)?Math.max(1,Math.floor(input.level)):s.level,
     xp:typeof input.xp==='number'&&Number.isFinite(input.xp)?Math.max(0,Math.floor(input.xp)):s.xp,
     faction:factions.includes(input.faction as Faction)?input.faction as Faction:s.faction,
@@ -90,7 +91,8 @@ export function fuseCards(state: PlayerState, firstId: string, secondId: string)
   const second = state.cards.find(card => card.id === secondId);
   if (!first || !second || first.rarity !== second.rarity) return state;
   const rarity = getNextRarity(first.rarity);
-  if (!rarity) return state;
+  const cost = getCardFusionCost(first.rarity);
+  if (!rarity || state.fusionMaterials < cost) return state;
   const fused: Card = {
     id: `fusion-${first.id}-${second.id}`,
     name: `${rarity} Fusion`,
@@ -104,7 +106,7 @@ export function fuseCards(state: PlayerState, firstId: string, secondId: string)
   const consumed = new Set([firstId, secondId]);
   const cards = [...state.cards.filter(card => !consumed.has(card.id)), fused];
   const equippedCardId = consumed.has(state.equippedCardId ?? '') ? fused.id : state.equippedCardId;
-  return { ...state, cards, equippedCardId };
+  return { ...state, cards, equippedCardId, fusionMaterials: state.fusionMaterials - cost };
 }
 
 export function getCardFusionCost(rarity:CardRarity):number {
