@@ -106,3 +106,7 @@ export function fuseCards(state: PlayerState, firstId: string, secondId: string)
   const equippedCardId = consumed.has(state.equippedCardId ?? '') ? fused.id : state.equippedCardId;
   return { ...state, cards, equippedCardId };
 }
+
+export function getCardFusionCost(rarity:CardRarity):number {
+  return rarity==='Common'?2:rarity==='Rare'?4:rarity==='Epic'?8:Infinity;
+}
