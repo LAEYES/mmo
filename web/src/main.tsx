@@ -6,7 +6,7 @@ import { canEnterZone, canWalkTile,  findTilePath, getNearestPoi, interactWithPo
 import { createEncounter, getCombatReward, getCombatSummary, playerAttack, type CombatState } from './combat';
 import { equipCard, factions, fuseCards, getCardFusionCost, getEquippedCard, grantArenaReward, applyPoiReward, applyScenarioChoice, applyCombatOutcome, applyWorldEventState, applyNpcInteraction, explore, loadPlayer, savePlayer, upgradeCard, type Faction } from './game';
 
-function WorldCanvas({ zoneId, waypoint, worldThreat, worldResources, explorationCount, factionInfluence, worldEvent, worldEventAge, onTileMove, onSignalSelect }: { zoneId: string; waypoint: {x:number;y:number}|null; worldThreat: number; worldResources: number; explorationCount: number; factionInfluence: number; onTileMove: (tileX: number, tileY: number) => void; onSignalSelect: (signal: {type:'poi'|'npc'|'event'; name:string; x:number; y:number}) => void }) {
+function WorldCanvas({ zoneId, waypoint, worldThreat, worldResources, explorationCount, factionInfluence, worldEvent, worldEventAge, onTileMove, onSignalSelect }: { zoneId: string; waypoint: {x:number;y:number}|null; worldThreat: number; worldResources: number; explorationCount: number; factionInfluence: number; worldEvent: import('./world').WorldEvent; worldEventAge: number; onTileMove: (tileX: number, tileY: number) => void; onSignalSelect: (signal: {type:'poi'|'npc'|'event'; name:string; x:number; y:number}) => void }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const position = useRef({ x: 0, y: 0 });
   useEffect(() => {
