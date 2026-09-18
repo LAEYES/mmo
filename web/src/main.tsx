@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import './styles.css';
 import { canEnterZone, canWalkTile, explore, findTilePath, getNearestPoi, interactWithPoi, getReachableZones, getZone, getZoneStatus, generateScenario, getZoneDynamicModifiers, getTile, moveTile, zones } from './world';
 import { createEncounter, getCombatReward, getCombatSummary, playerAttack, type CombatState } from './combat';
-import { equipCard, factions, fuseCards, getCardFusionCost, getEquippedCard, grantArenaReward, applyPoiReward, applyScenarioChoice, loadPlayer, savePlayer, upgradeCard, type Faction } from './game';
+import { equipCard, factions, fuseCards, getCardFusionCost, getEquippedCard, grantArenaReward, applyPoiReward, applyScenarioChoice, applyCombatOutcome, loadPlayer, savePlayer, upgradeCard, type Faction } from './game';
 
 function WorldCanvas({ zoneId, waypoint, onTileMove }: { zoneId: string; waypoint: {x:number;y:number}|null; onTileMove: (tileX: number, tileY: number) => void }) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -141,7 +141,7 @@ function App() {
     if(!combat)return;
     const next=playerAttack(combat); setCombat(next);
     if(next.status==='victory'){
-      let reward=grantArenaReward(player);
+      let reward=applyCombatOutcome(grantArenaReward(player),true,next.enemy.level);
       if(equipped){ reward={...reward,cards:reward.cards.map(c=>c.id===equipped.id?upgradeCard(c,getCombatReward(next)):c)}; }
       setLastCardXp(equipped?getCombatReward(next):0); update(reward);
     }
