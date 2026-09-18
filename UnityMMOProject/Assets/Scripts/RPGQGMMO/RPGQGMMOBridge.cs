@@ -3,10 +3,47 @@ using UnityEngine;
 
 namespace RPGQGMMO
 {
+    [Serializable]
+    public struct RPGQGCardProfile
+    {
+        public string cardId;
+        public string displayName;
+        public string archetype;
+        public int maxHealth;
+        public int attackPower;
+
+        public static RPGQGCardProfile FromCardId(string id)
+        {
+            string safeId = string.IsNullOrEmpty(id) ? "starter-gardien" : id;
+            RPGQGCardProfile profile = new RPGQGCardProfile
+            {
+                cardId = safeId,
+                displayName = safeId,
+                archetype = "gardien",
+                maxHealth = 160,
+                attackPower = 14
+            };
+
+            if (safeId.IndexOf("mage", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                profile.archetype = "mage";
+                profile.maxHealth = 120;
+                profile.attackPower = 18;
+            }
+            else if (safeId.IndexOf("rodeur", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                profile.archetype = "rodeur";
+                profile.maxHealth = 140;
+                profile.attackPower = 16;
+            }
+
+            return profile;
+        }
+    }
+
     /// <summary>
-    /// Unity-side orchestration layer between RPGQG cards, the Lua MMO engine and scene objects.
-    /// No external Lua package is required: the existing main.lua remains the gameplay rules source,
-    /// while Unity exposes events/state that a Lua host can bind to later.
+    /// Unity orchestration layer for FreedomArena/RPGQG cards and the Lua MMO rules.
+    /// Persistence remains local until the Supabase adapter is introduced.
     /// </summary>
     public class RPGQGMMOBridge : MonoBehaviour
     {
@@ -16,9 +53,9 @@ namespace RPGQGMMO
         public RPGQGLootInventory inventory;
         public RPGQGQuestRuntime questRuntime;
 
-        [Header("RPGQG Card")]
+        [Header("FreedomArena / RPGQG Card")]
         public string equippedCardId = "starter-gardien";
-        public string playerName = "RPGQG Pilot";
+        public string playerName = "RPGQG Player";
 
         [Header("Persistence")]
         public bool autosaveState = true;
@@ -45,8 +82,8 @@ namespace RPGQGMMO
 
         private void Start()
         {
-            ApplyCard(equippedCardId);
             LoadLocalState();
+            ApplyCard(equippedCardId);
             nextSave = Time.time + saveInterval;
         }
 
@@ -57,17 +94,18 @@ namespace RPGQGMMO
             SaveLocalState();
         }
 
+        public RPGQGCardProfile GetCardProfile()
+        {
+            return RPGQGCardProfile.FromCardId(equippedCardId);
+        }
+
         public void ApplyCard(string cardId)
         {
-            equippedCardId = string.IsNullOrEmpty(cardId) ? "starter-gardien" : cardId;
-            if (playerCombat == null) return;
+            RPGQGCardProfile profile = RPGQGCardProfile.FromCardId(cardId);
+            equippedCardId = profile.cardId;
 
-            if (equippedCardId.IndexOf("mage", StringComparison.OrdinalIgnoreCase) >= 0)
-                playerCombat.Configure(120, 18);
-            else if (equippedCardId.IndexOf("rodeur", StringComparison.OrdinalIgnoreCase) >= 0)
-                playerCombat.Configure(140, 16);
-            else
-                playerCombat.Configure(160, 14);
+            if (playerCombat != null)
+                playerCombat.Configure(profile.maxHealth, profile.attackPower);
 
             StateChanged?.Invoke("card:" + equippedCardId);
         }
@@ -88,9 +126,11 @@ namespace RPGQGMMO
 
         public void OnBeaconCrafted()
         {
-            if (inventory != null && inventory.Remove("Prisme d'Astéroïde", 1) &&
+            if (inventory != null &&
+                inventory.Remove("Prisme d'Astéroïde", 1) &&
                 inventory.Remove("Essence du Vide", 1) &&
-                questRuntime != null && questRuntime.CanComplete("craft-beacon"))
+                questRuntime != null &&
+                questRuntime.CanComplete("craft-beacon"))
             {
                 inventory.Add("Balise Stellaris", 1);
                 questRuntime.CompleteStep("craft-beacon");
@@ -105,7 +145,6 @@ namespace RPGQGMMO
 
         private void OnExperienceGranted(int amount)
         {
-            // XP is kept in PlayerPrefs until Supabase/Auth is connected.
             int xp = PlayerPrefs.GetInt("RPGQG_XP", 0) + Mathf.Max(0, amount);
             PlayerPrefs.SetInt("RPGQG_XP", xp);
             StateChanged?.Invoke("xp:" + xp);
@@ -135,6 +174,7 @@ namespace RPGQGMMO
                 PlayerPrefs.SetFloat("RPGQG_POS_Y", p.y);
                 PlayerPrefs.SetFloat("RPGQG_POS_Z", p.z);
             }
+
             PlayerPrefs.SetString("RPGQG_CARD", equippedCardId);
             PlayerPrefs.Save();
             StateChanged?.Invoke("saved");
