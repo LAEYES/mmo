@@ -15,10 +15,28 @@ export function applyNpcInteraction(state: PlayerState, faction: Faction, action
   const xpGain = action === 'dialogue' ? 8 : action === 'trade' ? 12 : 15;
   const resourceGain = action === 'trade' ? 2 : action === 'dialogue' ? 1 : 0;
   const threatDelta = action === 'patrol' ? -1 : action === 'trade' ? 0 : 1;
+  const liaisonQuest = state.quests.find(q => q.id === 'faction-1');
+  const quests = state.quests.map(q => {
+    if (q.id !== 'faction-1' || q.completed) return q;
+    const progress = Math.min(q.target, q.progress + 1);
+    return { ...q, progress, completed: progress >= q.target };
+  });
+  const completedLiaison = liaisonQuest && !liaisonQuest.completed && quests.some(q => q.id === 'faction-1' && q.completed);
+  const questXp = completedLiaison ? 15 : 0;
+  const questResources = completedLiaison ? 3 : 0;
+  const totalXp = state.xp + xpGain + questXp;
   const factionStates = state.factionStates.map(f => f.faction === faction
     ? { ...f, influence: Math.max(0, Math.min(200, f.influence + (action === 'patrol' ? 3 : 2))), reputation: f.reputation + (action === 'dialogue' ? 2 : 1) }
     : f);
-  return { ...state, xp: state.xp + xpGain, level: 1 + Math.floor((state.xp + xpGain) / 100), worldResources: state.worldResources + resourceGain, worldThreat: Math.max(1, state.worldThreat + threatDelta), factionStates };
+  return {
+    ...state,
+    xp: totalXp,
+    level: 1 + Math.floor(totalXp / 100),
+    worldResources: state.worldResources + resourceGain + questResources,
+    worldThreat: Math.max(1, state.worldThreat + threatDelta),
+    factionStates,
+    quests: quests.map(q => q.id === 'faction-1' && completedLiaison ? { ...q, rewardClaimed: true } : q)
+  };
 }
 
 export function applyWorldEventState(state: PlayerState, effect: 'threat' | 'resources' | 'encounter', intensity: number, eventFaction?: Faction | 'Neutral'): PlayerState {
