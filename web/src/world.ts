@@ -199,3 +199,10 @@ export function generateWorldEvent(zone: Zone, worldThreat: number, worldResourc
     effect
   };
 }
+
+export function applyWorldEvent(effect: WorldEvent['effect'], intensity: number, state: { worldThreat: number; worldResources: number }): { worldThreat: number; worldResources: number } {
+  const power = Math.max(1, Math.floor(intensity));
+  if (effect === 'threat') return { worldThreat: state.worldThreat + power, worldResources: state.worldResources };
+  if (effect === 'resources') return { worldThreat: Math.max(1, state.worldThreat - Math.max(1, Math.floor(power / 2))), worldResources: state.worldResources + power };
+  return { worldThreat: state.worldThreat + 1, worldResources: Math.max(0, state.worldResources + Math.max(0, power - 2)) };
+}
