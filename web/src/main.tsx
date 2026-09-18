@@ -5,6 +5,12 @@ import { canEnterZone, canWalkTile, explore, findTilePath, getNearestPoi, intera
 import { createEncounter, getCombatReward, getCombatSummary, playerAttack, type CombatState } from './combat';
 import { equipCard, factions, fuseCards, getCardFusionCost, getEquippedCard, grantArenaReward, applyPoiReward, applyScenarioChoice, applyCombatOutcome, applyWorldEventState, applyNpcInteraction, loadPlayer, savePlayer, upgradeCard, type Faction } from './game';
 
+function factionPressureStatus(zone: ReturnType<typeof getZone>, worldThreat: number, worldResources: number): string {
+  if (zone.faction === 'Neutral') return 'rgba(160,180,210,.65)';
+  const signal = Math.max(0, Math.min(200, 100 + worldResources * 4 - worldThreat * 6));
+  return signal >= 125 ? 'rgba(120,180,255,.75)' : signal >= 80 ? 'rgba(220,190,110,.75)' : 'rgba(230,110,130,.8)';
+}
+
 function WorldCanvas({ zoneId, waypoint, worldThreat, worldResources, explorationCount, onTileMove }: { zoneId: string; waypoint: {x:number;y:number}|null; worldThreat: number; worldResources: number; explorationCount: number; onTileMove: (tileX: number, tileY: number) => void }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const position = useRef({ x: 0, y: 0 });
@@ -99,7 +105,9 @@ function WorldCanvas({ zoneId, waypoint, worldThreat, worldResources, exploratio
         ctx.fillStyle='#9db4e8'; ctx.beginPath(); ctx.arc(x,y,7,0,Math.PI*2); ctx.fill();
         ctx.fillStyle='#c9d7f5'; ctx.font='11px Inter,sans-serif'; ctx.fillText(name,x+10,y+4);
       });
-      npcs.forEach((npc)=>{const sx=(npc.x-cameraX)*tile+tile/2,sy=(npc.y-cameraY)*tile+tile/2;if(sx<0||sy<0||sx>rect.width||sy>rect.height)return;ctx.fillStyle=npc.faction==='Aegis'?'#8fa9e8':npc.faction==='Nomads'?'#d8b56a':'#ad8ee8';ctx.beginPath();ctx.arc(sx,sy,6,0,Math.PI*2);ctx.fill();ctx.fillStyle='#e5ebfa';ctx.font='9px Inter,sans-serif';ctx.fillText(npc.activity.toUpperCase(),sx+8,sy+3);});
+      npcs.forEach((npc)=>{const sx=(npc.x-cameraX)*tile+tile/2,sy=(npc.y-cameraY)*tile+tile/2;if(sx<0||sy<0||sx>rect.width||sy>rect.height)return;ctx.fillStyle=npc.faction==='Aegis'?'#8fa9e8':npc.faction==='Nomads'?'#d8b56a':'#ad8ee8';ctx.beginPath();ctx.arc(sx,sy,6,0,Math.PI*2);ctx.fill();ctx.fillStyle='#e5ebfa';ctx.font='9px Inter,sans-serif';ctx.fillText(npc.activity.toUpperCase(),sx+8,sy+3);if(npc.activity==='patrol'){ctx.strokeStyle='rgba(235,120,120,.7)';ctx.lineWidth=1;ctx.setLineDash([3,3]);ctx.beginPath();ctx.arc(sx,sy,12+environment.atmosphere*2,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);}});
+      const pressureColor = factionPressureStatus(zone, worldThreat, worldResources);
+      ctx.strokeStyle=pressureColor;ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.strokeRect(8,8,rect.width-16,rect.height-16);ctx.setLineDash([]);
       const px=(position.current.x-cameraX)*tile+tile/2, py=(position.current.y-cameraY)*tile+tile/2;
       ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(px,py,9,0,Math.PI*2); ctx.fill();
       ctx.strokeStyle='#9db4e8'; ctx.stroke(); ctx.fillStyle='#c9d7f5'; ctx.font='600 11px Inter,sans-serif'; ctx.fillText('PLAYER',px-22,py+24);
