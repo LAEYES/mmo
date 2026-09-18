@@ -145,7 +145,69 @@ namespace RPGQGMMO
             return true;
         }
 
-        public void UnlockCard(string cardId)\n        {\n            RPGQGArenaCard card = cards.Find(c => c.id == cardId);\n            if (card == null) return;\n            card.unlocked = true;\n            PlayerPrefs.SetInt("FA_CARD_UNLOCK_" + card.id, 1);\n            PlayerPrefs.Save();\n        }\n\n        public bool IsUnlocked(string cardId)\n        {\n            RPGQGArenaCard card = cards.Find(c => c.id == cardId);\n            return card != null && (card.unlocked || PlayerPrefs.GetInt("FA_CARD_UNLOCK_" + card.id, 0) == 1);\n        }\n\n        public void ApplyAndGenerate()
+        public void UnlockCard(string cardId)
+        {
+            RPGQGArenaCard card = cards.Find(c => c.id == cardId);\n            if (card == null) return;
+            card.unlocked = true;\n            PlayerPrefs.SetInt("FA_CARD_UNLOCK_" + card.id, 1);\n            PlayerPrefs.Save();
+        }
+
+        public bool IsUnlocked(string cardId)\n        {\n            RPGQGArenaCard card = cards.Find(c => c.id == cardId);\n            return card != null && (card.unlocked || PlayerPrefs.GetInt("FA_CARD_UNLOCK_" + card.id, 0) == 1);\n        }\n\n        public string BuildSynergyProfile()
+        {
+            int terrain = 0, events = 0, bosses = 0;
+            float enemy = 1f, hazard = 1f, reward = 1f;
+            for (int i = 0; i < deck.Count; i++)
+            {
+                RPGQGArenaCard card = cards.Find(c => c.id == deck[i]);
+                if (card == null || !IsUnlocked(card.id)) continue;
+                if (card.category == "Terrain") terrain++;
+                else if (card.category == "Event") events++;
+                else if (card.category == "Boss") bosses++;
+                enemy *= Mathf.Lerp(1f, card.enemyMultiplier, 0.5f);
+                hazard *= Mathf.Lerp(1f, card.hazardMultiplier, 0.5f);
+                reward *= Mathf.Lerp(1f, card.rewardMultiplier, 0.5f);
+            }
+            string profile = "balanced";
+            if (terrain >= 2 && events >= 1) profile = "hazardous-terrain";
+            if (bosses >= 1 && events >= 1) profile = "boss-event";
+            if (terrain >= 3) profile = "fortified-terrain";
+            PlayerPrefs.SetString("FA_SYNERGY", profile);
+            PlayerPrefs.Save();
+            return profile + ":enemy=" + enemy.ToString("F2") + ":hazard=" + hazard.ToString("F2") + ":reward=" + reward.ToString("F2");
+        }
+
+        public bool ApplyDeckToArena()
+        {
+            RPGQGFreedomArenaWorldGenerator arena = FindObjectOfType<RPGQGFreedomArenaWorldGenerator>();
+            if (arena == null) return false;
+            RPGQGArenaCard primary = GetEquippedCard();
+            if (primary == null) return false;
+            ApplyToArena(arena);
+            float enemy = 1f, hazard = 1f, reward = 1f;
+            int terrain = 0, events = 0, bosses = 0;
+            for (int i = 0; i < deck.Count; i++)
+            {
+                RPGQGArenaCard card = cards.Find(c => c.id == deck[i]);
+                if (card == null || !IsUnlocked(card.id)) continue;
+                enemy *= Mathf.Lerp(1f, card.enemyMultiplier, 0.5f);
+                hazard *= Mathf.Lerp(1f, card.hazardMultiplier, 0.5f);
+                reward *= Mathf.Lerp(1f, card.rewardMultiplier, 0.5f);
+                if (card.category == "Terrain") terrain++;
+                if (card.category == "Event") events++;
+                if (card.category == "Boss") bosses++;
+            }
+            if (terrain >= 2) arena.coverDensity = Mathf.Clamp01(arena.coverDensity + 0.12f);
+            if (events >= 1) arena.hazardDensity = Mathf.Clamp01(arena.hazardDensity * hazard * 1.1f);
+            if (bosses >= 1) arena.arenaMode = RPGQGFreedomArenaWorldGenerator.RPGQGArenaMode.Boss;
+            arena.enemyCount = Mathf.Clamp(Mathf.RoundToInt(arena.enemyCount * enemy), 2, arena.maxActiveEnemies);
+            arena.rewardMultiplier = Mathf.Clamp(arena.rewardMultiplier * reward, 0.5f, 3f);
+            BuildSynergyProfile();
+            arena.Generate();
+            RPGQGMMOBridge bridge = GetComponent<RPGQGMMOBridge>();
+            if (bridge != null) bridge.NotifyStateChanged("arena:synergy:" + BuildSynergyProfile());
+            return true;
+        }
+
+        public void ApplyAndGenerate()
         {
             RPGQGFreedomArenaWorldGenerator arena = FindObjectOfType<RPGQGFreedomArenaWorldGenerator>();
             if (arena == null) return;
