@@ -33,8 +33,8 @@ function WorldCanvas({ zoneId, onTileMove }: { zoneId: string; onTileMove: (tile
       canvas.height = Math.max(1, Math.floor(rect.height * dpr));
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const tile = 32, cols = Math.ceil(rect.width / tile), rows = Math.ceil(rect.height / tile);
-      const cameraX = Math.max(0, position.current.x - Math.floor(cols / 2));
-      const cameraY = Math.max(0, position.current.y - Math.floor(rows / 2));
+      const cameraX = Math.max(0, Math.min(59 - cols, position.current.x - Math.floor(cols / 2)));
+      const cameraY = Math.max(0, Math.min(39 - rows, position.current.y - Math.floor(rows / 2)));
       ctx.clearRect(0, 0, rect.width, rect.height);
       for (let y=0;y<rows;y++) for (let x=0;x<cols;x++) {
         const worldX = x + cameraX, worldY = y + cameraY;
