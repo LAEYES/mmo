@@ -15,7 +15,7 @@ export type PlayerState = {
 
 export const factions: Faction[] = ['Aegis', 'Nomads', 'Eclipse'];
 export function createStarterPlayer(name = 'Arena Player'): PlayerState {
-  return { name, level:1, xp:0, faction:'Aegis', victories:0, cards:[], zoneId:'outpost', explorationCount:0, lastDiscovery:'', arenaWins:0, equippedCardId:null,fusionMaterials:0,quests:[{id:'explore-1',title:'Frontier Survey',description:'Explore the frontier and discover 3 locations.',progress:0,target:3,completed:false,rewardClaimed:false}],worldThreat:1,worldResources:0 };
+  return { name, level:1, xp:0, faction:'Aegis', victories:0, cards:[], zoneId:'outpost', explorationCount:0, lastDiscovery:'', arenaWins:0, equippedCardId:null,fusionMaterials:0,quests:[{id:'explore-1',title:'Frontier Survey',description:'Explore the frontier and discover 3 locations.',progress:0,target:3,completed:false,rewardClaimed:false},{id:'scenario-1',title:'Signal Hunter',description:'Choose the risky scenario path 3 times.',progress:0,target:3,completed:false,rewardClaimed:false},{id:'survival-1',title:'Safe Passage',description:'Choose the cautious scenario path 3 times.',progress:0,target:3,completed:false,rewardClaimed:false}],worldThreat:1,worldResources:0 };
 }
 function cardStats(wins:number, rarity:CardRarity):Omit<Card,'id'|'name'> {
   const m=rarity==='Legendary'?4:rarity==='Epic'?3:rarity==='Rare'?2:1;
