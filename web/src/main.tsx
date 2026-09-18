@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 import './styles.css';
 import { canEnterZone, canWalkTile,  findTilePath, getNearestPoi, interactWithPoi, interactWithNpc, getReachableZones, getZone, getZoneStatus, generateScenario, generateWorldEvent, getZoneDynamicModifiers, getZoneEnvironment, getZoneNpcs, getZoneFactionPressure, getFactionPressureLabel, getWorldEventProgress, getWorldEventPhase, getWorldEventPoint, getTile, moveTile, zones } from './world';
 import { createEncounter, getCombatReward, getCombatSummary, playerAttack, type CombatState } from './combat';
-import { equipCard, factions, fuseCards, getCardFusionCost, getEquippedCard, grantArenaReward, applyPoiReward, applyScenarioChoice, applyCombatOutcome, applyWorldEventState, applyNpcInteraction, loadPlayer, savePlayer, upgradeCard, type Faction } from './game';
+import { equipCard, factions, fuseCards, getCardFusionCost, getEquippedCard, grantArenaReward, applyPoiReward, applyScenarioChoice, applyCombatOutcome, applyWorldEventState, applyNpcInteraction, explore, loadPlayer, savePlayer, upgradeCard, type Faction } from './game';
 
 function WorldCanvas({ zoneId, waypoint, worldThreat, worldResources, explorationCount, factionInfluence, worldEvent, worldEventAge, onTileMove, onSignalSelect }: { zoneId: string; waypoint: {x:number;y:number}|null; worldThreat: number; worldResources: number; explorationCount: number; factionInfluence: number; onTileMove: (tileX: number, tileY: number) => void; onSignalSelect: (signal: {type:'poi'|'npc'|'event'; name:string; x:number; y:number}) => void }) {
   const ref = useRef<HTMLCanvasElement>(null);
