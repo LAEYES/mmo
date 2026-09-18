@@ -22,3 +22,21 @@ assert(upgraded.level===2&&upgraded.power===13&&upgraded.defense===7&&upgraded.v
 const legacy=normalizePlayer({...base,cards:[{...a,id:'x'},{...a,id:'x'}]});
 assert(!isValidPlayerState(legacy),'duplicate card ids should be rejected');
 console.log('RPGQG core tests passed');
+
+
+  it('keeps territorial event point deterministic for the same event id', () => {
+    const event = generateWorldEvent(zones[0], 4, 10, 2, 100);
+    expect(getWorldEventPoint(event)).toEqual(getWorldEventPoint(event));
+  });
+  it('clamps territorial event progress to its lifetime', () => {
+    const event = generateWorldEvent(zones[0], 4, 10, 2, 100);
+    expect(getWorldEventProgress(event, 0)).toBe(0);
+    expect(getWorldEventProgress(event, event.duration)).toBe(100);
+    expect(getWorldEventProgress(event, event.duration + 99)).toBe(100);
+  });
+  it('transitions territorial event phases from active to urgent to expiring', () => {
+    const event = { ...generateWorldEvent(zones[0], 4, 10, 2, 100), duration: 10 };
+    expect(getWorldEventPhase(event, 1)).toBe('active');
+    expect(getWorldEventPhase(event, 5)).toBe('urgent');
+    expect(getWorldEventPhase(event, 8)).toBe('expiring');
+  });
