@@ -19,12 +19,15 @@ namespace RPGQGMMO
     public sealed class RPGQGGameCollector : MonoBehaviour
     {
         public event Action<string> CardCollected;
+        public event Action<string> EmulatorProfileSelected;
+        private string emulatorProfile = "Native";
         public List<RPGQGCollectedCard> cards = new List<RPGQGCollectedCard>();
 
         private const string SaveKey = "RPGQG_COLLECTOR";
 
         private void Awake()
         {
+            emulatorProfile = PlayerPrefs.GetString("RPGQG_EMU_PROFILE", "Native");
             Load();
             EnsureStarter();
         }
@@ -55,6 +58,22 @@ namespace RPGQGMMO
             if (card == null) return;
             card.favorite = value;
             Save();
+        }
+
+        public string EmulatorProfile { get { return emulatorProfile; } }
+
+        public void SelectEmulatorProfile(string profile)
+        {
+            if (string.IsNullOrEmpty(profile)) return;
+            emulatorProfile = profile;
+            PlayerPrefs.SetString("RPGQG_EMU_PROFILE", emulatorProfile);
+            PlayerPrefs.Save();
+            EmulatorProfileSelected?.Invoke(emulatorProfile);
+        }
+
+        public string[] GetSupportedProfiles()
+        {
+            return new string[] { "Native", "Retro", "Arcade", "Experimental" };
         }
 
         public int UniqueCards
