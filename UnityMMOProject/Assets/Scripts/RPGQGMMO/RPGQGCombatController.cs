@@ -45,9 +45,15 @@ namespace RPGQGMMO
             if (health == 0)
             {
                 if (source != null)
-                    source.ExperienceGranted?.Invoke(25);
+                    source.GrantExperience(25);
                 Died?.Invoke();
             }
+        }
+
+        public void GrantExperience(int amount)
+        {
+            if (amount > 0)
+                ExperienceGranted?.Invoke(amount);
         }
 
         public void Heal(int amount)
