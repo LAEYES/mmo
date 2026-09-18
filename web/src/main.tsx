@@ -153,6 +153,7 @@ function WorldCanvas({ zoneId, waypoint, worldThreat, worldResources, exploratio
   },[zoneId,waypoint,worldThreat,worldResources,explorationCount,factionInfluence]);
   return <canvas ref={ref} className="tile-canvas" aria-label={`Tile map of ${getZone(zoneId).name}`} />;
 }
+
 function App() {
   const [player, setPlayer] = useState(loadPlayer);
   const [name, setName] = useState(player.name === 'Arena Player' ? '' : player.name);
@@ -164,15 +165,22 @@ function App() {
   const [worldMessage, setWorldMessage] = useState('Select a tile to move.');
   const [waypoint, setWaypoint] = useState<{x:number;y:number}|null>(null);
   const [pathLength, setPathLength] = useState(0);
-  const [selectedSignal, setSelectedSignal] = useState<{type:'poi'|'npc'; name:string; x:number; y:number} | null>(null);
+  const [selectedSignal, setSelectedSignal] = useState<{type:'poi'|'npc'|'event'; name:string; x:number; y:number} | null>(null);
   const [worldEvent, setWorldEvent] = useState(generateWorldEvent(getZone(player.zoneId),player.worldThreat,player.worldResources,player.explorationCount,player.factionStates.find(f=>f.faction===getZone(player.zoneId).faction)?.influence??100));
   const [worldEventAge, setWorldEventAge] = useState(0);
   const [scenario, setScenario] = useState(generateScenario(getZone(player.zoneId), player.level, player.explorationCount));
   const [poiMessage, setPoiMessage] = useState('');
   const [poiAction, setPoiAction] = useState('');
   const [autoMove, setAutoMove] = useState(false);
+  const currentZone = getZone(player.zoneId);
+  const environment = getZoneEnvironment(currentZone, player.worldThreat, player.worldResources, player.explorationCount);
+  const zoneNpcs = getZoneNpcs(currentZone, player.worldThreat, player.worldResources, player.explorationCount);
+  const localFaction = currentZone.faction === 'Neutral' ? null : player.factionStates.find(f => f.faction === currentZone.faction);
+  const factionPressure = getZoneFactionPressure(currentZone, localFaction?.influence ?? 100);
+  const activeFactionInfluence = currentZone.faction === 'Neutral' ? 100 : (localFaction?.influence ?? 100);
   const nearestPoi = getNearestPoi(currentZone, worldTile);
   const nearestNpc = zoneNpcs.reduce((nearest,npc)=>{const distance=Math.abs(npc.x-worldTile.x)+Math.abs(npc.y-worldTile.y);return distance<nearest.distance?{npc,distance}:nearest;},{npc:zoneNpcs[0],distance:Number.POSITIVE_INFINITY});
+  const update = (next: typeof player) => { setPlayer(next); savePlayer(next); void syncPlayerRemote(next); };
   useEffect(() => {
     if (!autoMove || !waypoint) return;
     const path = findTilePath(worldTile, waypoint);
@@ -223,7 +231,6 @@ function App() {
     return () => window.clearTimeout(timer);
   }, [autoMove, waypoint, worldTile]);
 
-  const update = (next: typeof player) => { setPlayer(next); savePlayer(next); void syncPlayerRemote(next); };
   useEffect(() => {
     let cancelled = false;
     void loadOrCreatePlayerRemote(player).then(result => {
@@ -236,27 +243,6 @@ function App() {
   }, []);
 
   const chooseFaction = (faction: Faction) => update({ ...player, faction });
-  const currentZone = getZone(player.zoneId);
-  const environment = getZoneEnvironment(currentZone, player.worldThreat, player.worldResources, player.explorationCount);
-  const zoneNpcs = getZoneNpcs(currentZone, player.worldThreat, player.worldResources, player.explorationCount);
-  const localFaction = currentZone.faction === 'Neutral' ? null : player.factionStates.find(f => f.faction === currentZone.faction);
-  const factionPressure = getZoneFactionPressure(currentZone, localFaction?.influence ?? 100);
-  const activeFactionInfluence = currentZone.faction === 'Neutral' ? 100 : (localFaction?.influence ?? 100);
-  useEffect(() => {
-    if (worldEventAge >= worldEvent.duration) {
-      const nextEvent = generateWorldEvent(currentZone, player.worldThreat, player.worldResources, player.explorationCount, activeFactionInfluence);
-      setWorldEvent(nextEvent);
-      setWorldEventAge(0);
-      setWaypoint(null);
-      return;
-    }
-    const timer = window.setTimeout(() => setWorldEventAge(age => age + 1), 1000);
-    return () => window.clearTimeout(timer);
-  }, [worldEventAge, worldEvent.duration, currentZone.id, player.worldThreat, player.worldResources, player.explorationCount, activeFactionInfluence]);
-  const zoneModifiers = getZoneDynamicModifiers(currentZone, player.worldThreat, player.worldResources, player.factionStates.find(f=>f.faction===player.faction)?.influence??100);
-  const environmentLabels = { dawn: 'Aube', day: 'Jour', dusk: 'Crépuscule', night: 'Nuit' } as const;
-  const weatherLabels = { clear: 'Clair', mist: 'Brume', storm: 'Tempête', frost: 'Gel' } as const;
-  const equipped = getEquippedCard(player);
   const moveTo = (zoneId: string) => { const zone=getZone(zoneId); if(canEnterZone(player.level,zone)) update({...player,zoneId:zone.id,lastDiscovery:`Arrived at ${zone.name}`,worldTile:{x:0,y:0}}); };
   const doExplore = () => update(explore(player));
   const startCombat = () => { const faction=currentZone.faction==='Neutral'?player.faction:currentZone.faction; const modifiers=getZoneDynamicModifiers(currentZone,player.worldThreat,player.worldResources,player.factionStates.find(f=>f.faction===player.faction)?.influence??100); setCombat(createEncounter(player.level,currentZone.level,{...(equipped??{}),threat:player.worldThreat,faction,encounterChance:modifiers.encounterChance})); };
@@ -281,7 +267,7 @@ function App() {
         <section className="panel hud-layer"><div><span className="eyebrow">TACTICAL HUD · LAYERED / 3D READY</span><h2>{environmentLabels[environment.cycle]} · {weatherLabels[environment.weather]}</h2><div className="hud-strip"><div className="hud-chip"><b>ZONE</b><span>{currentZone.name}</span></div><div className="hud-chip"><b>FACTION</b><span>{factionPressure.status}</span></div><div className="hud-chip"><b>THREAT</b><span>{player.worldThreat}</span></div><div className="hud-chip"><b>PRESSURE</b><span>{factionPressure.pressure}</span></div></div><div className="environment-grid"><article><strong>Cycle</strong><span>{environmentLabels[environment.cycle]}</span></article><article><strong>Météo</strong><span>{weatherLabels[environment.weather]}</span></article><article><strong>Contrôle</strong><span>{getFactionPressureLabel(factionPressure)}</span></article><article><strong>Rencontres</strong><span>{zoneModifiers.encounterChance}%</span></article></div><div className="hud-radar"><span className="radar-ring ring-a"/><span className="radar-ring ring-b"/><span className="radar-core"/><span className="radar-label">WORLD SYNC</span><i className="radar-sweep"/></div><p>HUD superposé : environnement, contrôle territorial, menace et pression alimentent la même couche de simulation pour les futurs VFX et scènes 3D.</p></div></section>
   <section className="panel"><div><span className="eyebrow">WORLD STATE · LAYERS</span><h2>Persistent simulation</h2><p>Threat {player.worldThreat} · Resources {player.worldResources}</p><div className="faction-grid">{player.factionStates.map(f=><article className="faction-state" key={f.faction}><strong>{f.faction}</strong><span>Influence {f.influence}</span><span>Reputation {f.reputation}</span></article>)}</div></div></section>
   <section className="panel"><div><span className="eyebrow">EMERGENT WORLD EVENT</span><h2>{worldEvent.title}</h2><p>{worldEvent.description}</p><small>{worldEvent.faction} · Intensity {worldEvent.intensity} · Effect {worldEvent.effect} · Phase {getWorldEventPhase(worldEvent,worldEventAge).toUpperCase()} · Lifetime {worldEventAge}/{worldEvent.duration}</small><div className="quest-progress"><i style={{width:""+getWorldEventProgress(worldEvent,worldEventAge)+"%"}} /></div><div className="actions"><button type="button" onClick={()=>{const eventPoint = getWorldEventPoint(worldEvent);setWaypoint(eventPoint);setAutoMove(true);setWorldMessage('Route to event: '+worldEvent.title);}}>Navigate to event</button><button type="button" onClick={()=>{const next=applyWorldEventState(player,worldEvent.effect,worldEvent.intensity,worldEvent.faction);update(next);setWorldEvent(generateWorldEvent(currentZone,next.worldThreat,next.worldResources,next.explorationCount,activeFactionInfluence));setWorldMessage('World event resolved: '+worldEvent.title);setWorldEventAge(0);}}>Resolve now</button></div><p className="event-signal">◈ EVENT SIGNAL · intensity {worldEvent.intensity}</p></div></section>
-<section className="panel"><div><span className="eyebrow">DYNAMIC SCENARIO</span><h2>{scenario.title}</h2><p>{scenario.description}</p><small>Threat {zoneModifiers.threat} · Yield {zoneModifiers.resourceYield} · Encounter {zoneModifiers.encounterChance}%</small><div className="scenario-choices">{scenario.choices.map((choice,index)=><button key={choice} type="button" onClick={()=>{update(applyScenarioChoice(player,index));setWorldMessage('Scenario choice: '+choice);setScenario(generateScenario(currentZone,player.level,player.explorationCount,index+1));}}>{choice}</button>)}</div></div></section>
+<section className="panel"><div><span className="eyebrow">DYNAMIC SCENARIO</span><h2>{scenario.title}</h2><p>{scenario.description}</p><small>Threat {zoneModifiers.threat} · Yield {zoneModifiers.resourceYield} · Encounter {zoneModifiers.encounterChance}%</small><div className="scenario-choices">{scenario.choices.map((choice,index)=><button key={choice} type="button" onClick={()=>{const next=applyScenarioChoice(player,index);update(next);setWorldMessage('Scenario choice: '+choice);setScenario(generateScenario(currentZone,next.level,next.explorationCount,index+1));}}>{choice}</button>)}</div></div></section>
 <section className="panel"><div><span className="eyebrow">QUEST LOG</span><h2>Frontier objectives</h2></div><div className="quests">{player.quests.map(quest=><article className={quest.completed?'quest completed':'quest'} key={quest.id}><strong>{quest.title}</strong><span>{quest.description}</span><div className="quest-progress"><i style={{width:`${Math.min(100,Math.round((quest.progress/quest.target)*100))}%`}} /></div><small>{quest.progress}/{quest.target} · {quest.completed?'Completed':'In progress'}</small></article>)}</div></section>
 <section className="panel"><div><span className="eyebrow">RPGQG CARDS · EQUIPMENT / FUSION</span><h2>Collection</h2></div>{player.cards.length===0?<p>No cards yet. Win an arena fight.</p>:<div className="cards">{player.cards.map(card=><article className={card.id===player.equippedCardId?'card-equipped':''} key={card.id}><strong>{card.name}</strong><span>{card.rarity} · Lv {card.level}</span><div className="card-stats"><span>⚔ Power <b>{card.power}</b></span><span>🛡 Defense <b>{card.defense}</b></span><span>❤ Vitality <b>{card.vitality}</b></span><span>★ XP <b>{card.xp}/100</b></span></div><div className="actions"><button onClick={()=>update(equipCard(player,card.id===player.equippedCardId?null:card.id))}>{card.id===player.equippedCardId?'Unequip':'Equip'}</button>{fusionSourceId===null?<button disabled={!player.cards.some(other=>other.id!==card.id&&other.rarity===card.rarity)} onClick={()=>setFusionSourceId(card.id)}>Fuse</button>:fusionSourceId===card.id?<button onClick={()=>setFusionSourceId(null)}>Cancel fusion</button>:<button disabled={card.rarity==='Legendary'||player.cards.find(other=>other.id===fusionSourceId)?.rarity!==card.rarity||player.fusionMaterials<getCardFusionCost(card.rarity)} onClick={()=>{const next=fuseCards(player,fusionSourceId,card.id);if(next!==player){update(next);setFusionSourceId(null);}}}>Fuse with this ({getCardFusionCost(card.rarity)} materials)</button>}</div></article>)}</div>}</section></main>;
 }
