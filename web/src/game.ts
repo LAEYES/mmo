@@ -80,19 +80,25 @@ export function applyScenarioChoice(state:PlayerState,choiceIndex:number):Player
   const xpGain = 20 + Math.max(1, enemyLevel) * 10;
   const xp = state.xp + xpGain;
   const quests = state.quests.map(q => {
-    if (q.id !== 'combat-1' || q.completed) return q;
+    if ((q.id !== 'combat-1' && q.id !== 'patrol-1') || q.completed) return q;
     const progress = Math.min(q.target, q.progress + 1);
     return { ...q, progress, completed: progress >= q.target, rewardClaimed: q.rewardClaimed };
   });
-  const completed = quests.find(q => q.id === 'combat-1' && q.completed && !q.rewardClaimed);
+  const completedCombat = quests.find(q => q.id === 'combat-1' && q.completed && !q.rewardClaimed);
+  const completedPatrol = quests.find(q => q.id === 'patrol-1' && q.completed && !q.rewardClaimed);
+  const questReward = (completedCombat ? 3 : 0) + (completedPatrol ? 2 : 0);
   return {
     ...state,
-    xp,
-    level: 1 + Math.floor(xp / 100),
+    xp: xp + (completedPatrol ? 20 : 0),
+    level: 1 + Math.floor((xp + (completedPatrol ? 20 : 0)) / 100),
     victories: state.victories + 1,
     worldThreat: Math.max(1, state.worldThreat - 1),
-    worldResources: state.worldResources + 1 + (completed ? 3 : 0),
-    quests: quests.map(q => q.id === 'combat-1' && completed ? { ...q, rewardClaimed: true } : q)
+    worldResources: state.worldResources + 1 + questReward,
+    quests: quests.map(q =>
+      (q.id === 'combat-1' && completedCombat) || (q.id === 'patrol-1' && completedPatrol)
+        ? { ...q, rewardClaimed: true }
+        : q
+    )
   };
 }
 
