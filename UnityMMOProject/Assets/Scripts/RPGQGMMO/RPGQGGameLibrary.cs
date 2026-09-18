@@ -23,6 +23,19 @@ namespace RPGQGMMO
         public List<RPGQGGameEntry> entries = new List<RPGQGGameEntry>();
         public event Action<string> LaunchRequested;
 
+        public void RegisterDefaultArenaEmulations()
+        {
+            Register("freedomarena-nes", "FreedomArena Classic", "NES", "Retro");
+            Register("freedomarena-arcade", "FreedomArena Arcade", "Arcade", "Arcade");
+            Register("freedomarena-16bit", "FreedomArena 16-bit", "SNES", "Retro");
+            Register("freedomarena-experimental", "FreedomArena Experimental", "Custom", "Experimental");
+        }
+
+        public void LaunchArenaEmulation(string gameId)
+        {
+            RequestLaunch(gameId);
+        }
+
         public void Register(string gameId, string title, string platform, string emulatorProfile)
         {
             if (string.IsNullOrEmpty(gameId)) return;
