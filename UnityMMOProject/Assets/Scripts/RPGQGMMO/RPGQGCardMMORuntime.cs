@@ -40,6 +40,9 @@ namespace RPGQGMMO
         private bool skillDash;
         private bool skillBarrier;
         private bool skillUltimate;
+        private float dashCooldown;
+        private float barrierCooldown;
+        private float ultimateCooldown;
 
         public int Level { get { return level; } }
         public int XP { get { return xp; } }
@@ -49,6 +52,40 @@ namespace RPGQGMMO
         public bool HasDash { get { return skillDash; } }
         public bool HasBarrier { get { return skillBarrier; } }
         public bool HasUltimate { get { return skillUltimate; } }
+        public float DashCooldown { get { return dashCooldown; } }
+        public float BarrierCooldown { get { return barrierCooldown; } }
+        public float UltimateCooldown { get { return ultimateCooldown; } }
+
+        private void Update()
+        {
+            dashCooldown = Mathf.Max(0f, dashCooldown - Time.deltaTime);
+            barrierCooldown = Mathf.Max(0f, barrierCooldown - Time.deltaTime);
+            ultimateCooldown = Mathf.Max(0f, ultimateCooldown - Time.deltaTime);
+        }
+
+        public bool TryUseSkill(string skill)
+        {
+            if (string.IsNullOrEmpty(skill)) return false;
+            if (skill.Equals("dash", StringComparison.OrdinalIgnoreCase) && skillDash && dashCooldown <= 0f)
+            {
+                dashCooldown = 4f;
+                bridge?.NotifyStateChanged("skill:dash:ready");
+                return true;
+            }
+            if (skill.Equals("barrier", StringComparison.OrdinalIgnoreCase) && skillBarrier && barrierCooldown <= 0f)
+            {
+                barrierCooldown = 12f;
+                bridge?.NotifyStateChanged("skill:barrier:ready");
+                return true;
+            }
+            if (skill.Equals("ultimate", StringComparison.OrdinalIgnoreCase) && skillUltimate && ultimateCooldown <= 0f)
+            {
+                ultimateCooldown = 30f;
+                bridge?.NotifyStateChanged("skill:ultimate:ready");
+                return true;
+            }
+            return false;
+        }
 
         private void Awake()
         {
@@ -87,6 +124,13 @@ namespace RPGQGMMO
             Save();
             if (bridge != null) bridge.NotifyStateChanged("skill:" + skill);
             return true;
+        }
+
+        public void ResetSkillCooldowns()
+        {
+            dashCooldown = 0f;
+            barrierCooldown = 0f;
+            ultimateCooldown = 0f;
         }
 
         public int GetRarityForCard(string cardId)
