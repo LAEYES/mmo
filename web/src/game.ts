@@ -8,7 +8,7 @@ export type Card = {
 
 export type PlayerState = {
   name: string; level: number; xp: number; faction: Faction; victories: number; cards: Card[];
-  zoneId: string; explorationCount: number; lastDiscovery: string; arenaWins: number; equippedCardId: string | null;
+  zoneId: string; explorationCount: number; lastDiscovery: string; arenaWins: number; equippedCardId: string | null; fusionMaterials: number;
 };
 
 export const factions: Faction[] = ['Aegis', 'Nomads', 'Eclipse'];
@@ -29,7 +29,7 @@ export function grantArenaReward(state:PlayerState):PlayerState {
   const arenaWins=state.arenaWins+1,xpGain=40+arenaWins*5,xp=state.xp+xpGain,level=1+Math.floor(xp/100);
   const rarity:CardRarity=arenaWins%10===0?'Epic':arenaWins%3===0?'Rare':'Common';
   const card:Card={id:`arena-${arenaWins}`,name:`Arena Reward #${arenaWins}`,...cardStats(arenaWins,rarity)};
-  return {...state,arenaWins,victories:state.victories+1,xp,level,cards:[...state.cards,card]};
+  return {...state,arenaWins,victories:state.victories+1,xp,level,cards:[...state.cards,card],fusionMaterials:state.fusionMaterials+1};
 }
 const CARD_XP_PER_LEVEL = 100;
 export function upgradeCard(card:Card,xpGain:number):Card {
@@ -66,7 +66,7 @@ export function normalizePlayer(input:Partial<PlayerState>):PlayerState {
   const s=createStarterPlayer();
   const cards=Array.isArray(input.cards)?input.cards.map(normalizeCard).filter((c):c is Card=>c!==null):[];
   const equipped=typeof input.equippedCardId==='string'&&cards.some(c=>c.id===input.equippedCardId)?input.equippedCardId:null;
-  return {...s,...input,name:typeof input.name==='string'&&input.name.trim()?input.name.trim().slice(0,24):s.name,
+  const fusionMaterials=typeof input.fusionMaterials==='number'&&Number.isFinite(input.fusionMaterials)?Math.max(0,Math.floor(input.fusionMaterials)):s.fusionMaterials;\n  return {...s,...input,name:typeof input.name==='string'&&input.name.trim()?input.name.trim().slice(0,24):s.name,
     level:typeof input.level==='number'&&Number.isFinite(input.level)?Math.max(1,Math.floor(input.level)):s.level,
     xp:typeof input.xp==='number'&&Number.isFinite(input.xp)?Math.max(0,Math.floor(input.xp)):s.xp,
     faction:factions.includes(input.faction as Faction)?input.faction as Faction:s.faction,
@@ -74,7 +74,7 @@ export function normalizePlayer(input:Partial<PlayerState>):PlayerState {
     cards,zoneId:typeof input.zoneId==='string'?input.zoneId:s.zoneId,
     explorationCount:typeof input.explorationCount==='number'&&Number.isFinite(input.explorationCount)?Math.max(0,Math.floor(input.explorationCount)):s.explorationCount,
     lastDiscovery:typeof input.lastDiscovery==='string'?input.lastDiscovery.slice(0,200):s.lastDiscovery,
-    arenaWins:typeof input.arenaWins==='number'&&Number.isFinite(input.arenaWins)?Math.max(0,Math.floor(input.arenaWins)):s.arenaWins,equippedCardId:equipped};
+    arenaWins:typeof input.arenaWins==='number'&&Number.isFinite(input.arenaWins)?Math.max(0,Math.floor(input.arenaWins)):s.arenaWins,equippedCardId:equipped,fusionMaterials};
 }
 export function savePlayer(state:PlayerState):void { localStorage.setItem(STORAGE_KEY,JSON.stringify(normalizePlayer(state))); }
 export function clearPlayerSave():void { localStorage.removeItem(STORAGE_KEY); }
