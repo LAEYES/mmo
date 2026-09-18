@@ -10,6 +10,16 @@ function cardStats(wins:number,rarity:CardRarity):Omit<Card,'id'|'name'>{const m
 export function grantVictory(state:PlayerState):PlayerState{const victories=state.victories+1,xp=state.xp+25,level=1+Math.floor(xp/100),rarity:CardRarity=victories%10===0?'Epic':victories%5===0?'Rare':'Common',card:Card={id:`victory-${victories}`,name:`Arena Card #${victories}`,...cardStats(victories,rarity)};return{...state,victories,xp,level,cards:[...state.cards,card]};}
 export function updatePoiQuests(state:PlayerState,action:'explore'|'loot'|'encounter'):PlayerState{return{...state,quests:state.quests.map(q=>{if(q.completed||q.id!=='explore-1'||action!=='explore')return q;const progress=Math.min(q.target,q.progress+1);return{...q,progress,completed:progress>=q.target};})};}
 export function applyPoiReward(state:PlayerState,action:'explore'|'loot'|'encounter',modifiers:{resourceYield?:number;encounterChance?:number}={}):PlayerState{const yieldScale=Math.max(1,Math.floor(modifiers.resourceYield??1)),encounterPressure=Math.max(0,Math.floor((modifiers.encounterChance??15)/20));const xp=state.xp+(action==='explore'?15:action==='loot'?10+yieldScale:20+encounterPressure),questState=updatePoiQuests(state,action),completedNow=questState.quests.some(q=>q.id==='explore-1'&&q.completed&&!q.rewardClaimed);return{...state,xp,level:1+Math.floor(xp/100),explorationCount:action==='explore'?state.explorationCount+1:state.explorationCount,fusionMaterials:state.fusionMaterials+(action==='loot'?yieldScale:0)+(completedNow?3:0),worldThreat:action==='encounter'?state.worldThreat+Math.max(0,encounterPressure-1):state.worldThreat,worldResources:action==='loot'?state.worldResources+yieldScale:state.worldResources,quests:questState.quests.map(q=>q.id==='explore-1'&&completedNow?{...q,rewardClaimed:true}:q)};}
+export function applyNpcInteraction(state: PlayerState, faction: Faction, action: 'dialogue' | 'trade' | 'patrol'): PlayerState {
+  const xpGain = action === 'dialogue' ? 8 : action === 'trade' ? 12 : 15;
+  const resourceGain = action === 'trade' ? 2 : action === 'dialogue' ? 1 : 0;
+  const threatDelta = action === 'patrol' ? -1 : action === 'trade' ? 0 : 1;
+  const factionStates = state.factionStates.map(f => f.faction === faction
+    ? { ...f, influence: Math.max(0, Math.min(200, f.influence + (action === 'patrol' ? 3 : 2))), reputation: f.reputation + (action === 'dialogue' ? 2 : 1) }
+    : f);
+  return { ...state, xp: state.xp + xpGain, level: 1 + Math.floor((state.xp + xpGain) / 100), worldResources: state.worldResources + resourceGain, worldThreat: Math.max(1, state.worldThreat + threatDelta), factionStates };
+}
+
 export function applyWorldEventState(state: PlayerState, effect: 'threat' | 'resources' | 'encounter', intensity: number, eventFaction?: Faction | 'Neutral'): PlayerState {
   const power = Math.max(1, Math.floor(intensity));
   const worldThreat = effect === 'threat' ? state.worldThreat + power : effect === 'resources' ? Math.max(1, state.worldThreat - Math.max(1, Math.floor(power / 2))) : state.worldThreat + 1;
