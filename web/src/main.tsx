@@ -97,15 +97,19 @@ function WorldCanvas({ zoneId, waypoint, worldThreat, worldResources, exploratio
       const eventSeed = worldEvent.id.split(':').reduce((sum, part) => sum + Array.from(part).reduce((value, char) => value + char.charCodeAt(0), 0), 0);
       const eventPoint = { x: 4 + (eventSeed % 52), y: 4 + (Math.floor(eventSeed / 52) % 32) };
       const eventDistance = Math.abs(position.current.x - eventPoint.x) + Math.abs(position.current.y - eventPoint.y);
+      const eventProgress = Math.min(100, Math.round((Math.min(worldThreat + explorationCount, worldThreat + explorationCount + worldResources) / Math.max(1, worldThreat + explorationCount + 4)) * 100));
+      const eventPhase = eventProgress >= 80 ? 'EXPIRING' : eventProgress >= 50 ? 'URGENT' : 'ACTIVE';
+      const eventRadius = eventPhase === 'EXPIRING' ? 30 : eventPhase === 'URGENT' ? 26 : 22;
       if (eventDistance <= 8) {
-        ctx.strokeStyle='rgba(230,120,110,.55)'; ctx.lineWidth=2; ctx.setLineDash([5,5]);
+        ctx.strokeStyle=eventPhase==='EXPIRING'?'rgba(240,100,100,.8)':eventPhase==='URGENT'?'rgba(240,180,100,.7)':'rgba(120,190,230,.6)';
+        ctx.lineWidth=eventPhase==='EXPIRING'?3:2; ctx.setLineDash([5,5]);
         const ex=(eventPoint.x-cameraX)*tile+tile/2, ey=(eventPoint.y-cameraY)*tile+tile/2;
-        if(ex>=0&&ey>=0&&ex<=rect.width&&ey<=rect.height){ctx.beginPath();ctx.arc(ex,ey,24,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#f0b0a0';ctx.font='600 9px Inter,sans-serif';ctx.fillText('EVENT',ex-18,ey-30);}
+        if(ex>=0&&ey>=0&&ex<=rect.width&&ey<=rect.height){ctx.beginPath();ctx.arc(ex,ey,eventRadius,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#f0b0a0';ctx.font='600 9px Inter,sans-serif';ctx.fillText(eventPhase+' · EVENT',ex-30,ey-30);}
         ctx.setLineDash([]);
       }
-      ctx.fillStyle='#ef9f8f'; ctx.beginPath();
+      ctx.fillStyle=eventPhase==='EXPIRING'?'#ef7777':eventPhase==='URGENT'?'#e5b26d':'#8fbfda'; ctx.beginPath();
       const ex=(eventPoint.x-cameraX)*tile+tile/2, ey=(eventPoint.y-cameraY)*tile+tile/2;
-      if(ex>=-10&&ey>=-10&&ex<=rect.width+10&&ey<=rect.height+10){ctx.arc(ex,ey,5+Math.min(4,worldThreat/3),0,Math.PI*2);ctx.fill();}
+      if(ex>=-10&&ey>=-10&&ex<=rect.width+10&&ey<=rect.height+10){ctx.arc(ex,ey,5+Math.min(4,worldThreat/3)+(eventPhase==='EXPIRING'?3:0),0,Math.PI*2);ctx.fill();}
       const path = waypoint ? findTilePath(position.current, waypoint) : [];
       if (path.length > 1) {
         ctx.strokeStyle = '#d8b56a';
