@@ -38,6 +38,25 @@ function WorldCanvas({ zoneId }: { zoneId: string }) {
       ctx.beginPath();
       poiPositions.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
       ctx.stroke();
+      const playerX = rect.width * 0.5;
+      const playerY = rect.height * 0.84;
+      ctx.strokeStyle = '#829bd0';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.moveTo(playerX, playerY);
+      if (poiPositions.length) ctx.lineTo(poiPositions[poiPositions.length - 1].x, poiPositions[poiPositions.length - 1].y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(playerX, playerY, 9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#9db4e8';
+      ctx.stroke();
+      ctx.fillStyle = '#c9d7f5';
+      ctx.font = '600 11px Inter, sans-serif';
+      ctx.fillText('PLAYER', playerX - 22, playerY + 24);
       poiPositions.forEach((p) => {
         ctx.fillStyle = '#9db4e8';
         ctx.beginPath();
