@@ -1,4 +1,5 @@
 import { StrictMode, useEffect, useRef, useState } from 'react';
+import { loadOrCreatePlayerRemote, syncPlayerRemote } from './lib/supabase';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
 import { canEnterZone, canWalkTile, explore, findTilePath, getNearestPoi, interactWithPoi, getReachableZones, getZone, getZoneStatus, generateScenario, generateWorldEvent, getZoneDynamicModifiers, getZoneEnvironment, getZoneNpcs, getZoneFactionPressure, getFactionPressureLabel, getWorldEventProgress, getWorldEventPhase, getWorldEventPoint, getTile, moveTile, zones } from './world';
@@ -222,7 +223,18 @@ function App() {
     return () => window.clearTimeout(timer);
   }, [autoMove, waypoint, worldTile]);
 
-  const update = (next: typeof player) => { setPlayer(next); savePlayer(next); };
+  const update = (next: typeof player) => { setPlayer(next); savePlayer(next); void syncPlayerRemote(next); };
+  useEffect(() => {
+    let cancelled = false;
+    void loadOrCreatePlayerRemote(player).then(result => {
+      if (!cancelled && result.player) {
+        savePlayer(result.player);
+        setPlayer(result.player);
+      }
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
   const chooseFaction = (faction: Faction) => update({ ...player, faction });
   const currentZone = getZone(player.zoneId);
   const environment = getZoneEnvironment(currentZone, player.worldThreat, player.worldResources, player.explorationCount);
