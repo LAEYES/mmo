@@ -88,7 +88,24 @@ function App() {
   const [worldMessage, setWorldMessage] = useState('Select a tile to move.');
   const [waypoint, setWaypoint] = useState<{x:number;y:number}|null>(null);
   const [pathLength, setPathLength] = useState(0);
+  const [autoMove, setAutoMove] = useState(false);
   const nearestPoi = getNearestPoi(currentZone, worldTile);
+  useEffect(() => {
+    if (!autoMove || !waypoint) return;
+    const path = findTilePath(worldTile, waypoint);
+    if (path.length <= 1) {
+      setAutoMove(false);
+      setPathLength(0);
+      setWorldMessage('Waypoint reached.');
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setWorldTile(path[1]);
+      setPathLength(path.length - 2);
+    }, 120);
+    return () => window.clearTimeout(timer);
+  }, [autoMove, waypoint, worldTile]);
+
   const update = (next: typeof player) => { setPlayer(next); savePlayer(next); };
   const chooseFaction = (faction: Faction) => update({ ...player, faction });
   const currentZone = getZone(player.zoneId);
