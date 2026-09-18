@@ -15,6 +15,8 @@ namespace RPGQGMMO
         private Text statusText;
         private Slider healthBar;
         private Slider xpBar;
+        private Button profileButton;
+        private Button accessibilityButton;
 
         private void Awake()
         {
@@ -70,7 +72,9 @@ namespace RPGQGMMO
             healthBar = CreateBar(root.transform, "Health", new Vector2(24, -65), new Color(.85f, .12f, .2f));
             xpBar = CreateBar(root.transform, "XP", new Vector2(24, -108), new Color(.1f, .65f, 1f));
 
-            CreateText(root.transform, "MENU  |  INVENTAIRE  |  QUÊTES  |  CARTE  |  COMPÉTENCES", 16, TextAnchor.MiddleRight)
+            CreateButton(root.transform, "PROFIL", new Vector2(-210, -18), new Vector2(170, 52), OpenProfile);
+            CreateButton(root.transform, "ACCESSIBILITÉ", new Vector2(-390, -18), new Vector2(170, 52), OpenAccessibility);
+            CreateText(root.transform, "INVENTAIRE • QUÊTES • CARTE • COMPÉTENCES", 16, TextAnchor.MiddleRight)
                 .rectTransform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
 
             Text menu = root.GetComponentsInChildren<Text>()[root.GetComponentsInChildren<Text>().Length - 1];
@@ -79,6 +83,35 @@ namespace RPGQGMMO
             menu.rectTransform.pivot = new Vector2(1, .5f);
             menu.rectTransform.anchoredPosition = new Vector2(-24, 0);
             menu.rectTransform.sizeDelta = new Vector2(700, 40);
+        }
+
+        private void CreateButton(Transform parent, string label, Vector2 position, Vector2 size, UnityEngine.Events.UnityAction action)
+        {
+            GameObject go = new GameObject(label);
+            go.transform.SetParent(parent, false);
+            RectTransform r = go.AddComponent<RectTransform>();
+            r.anchorMin = new Vector2(1, 1); r.anchorMax = new Vector2(1, 1);
+            r.pivot = new Vector2(1, 1); r.anchoredPosition = position; r.sizeDelta = size;
+            Image image = go.AddComponent<Image>();
+            image.color = new Color(.03f, .15f, .24f, 1);
+            Button b = go.AddComponent<Button>();
+            b.onClick.AddListener(action);
+            Text t = CreateText(go.transform, label, 15, TextAnchor.MiddleCenter);
+            t.rectTransform.anchorMin = Vector2.zero; t.rectTransform.anchorMax = Vector2.one;
+            t.rectTransform.offsetMin = Vector2.zero; t.rectTransform.offsetMax = Vector2.zero;
+        }
+
+        private void OpenProfile()
+        {
+            RPGQGCharacterProfileUI profile = GetComponent<RPGQGCharacterProfileUI>();
+            if (profile == null) profile = gameObject.AddComponent<RPGQGCharacterProfileUI>();
+            profile.Open();
+        }
+
+        private void OpenAccessibility()
+        {
+            RPGQGAccessibilityUI access = FindObjectOfType<RPGQGAccessibilityUI>();
+            if (access != null) access.Open();
         }
 
         private Slider CreateBar(Transform parent, string name, Vector2 position, Color fillColor)
