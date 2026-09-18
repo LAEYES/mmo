@@ -150,7 +150,7 @@ function App() {
   const equipped = getEquippedCard(player);
   const moveTo = (zoneId: string) => { const zone=getZone(zoneId); if(canEnterZone(player.level,zone)) update({...player,zoneId:zone.id,lastDiscovery:`Arrived at ${zone.name}`}); };
   const doExplore = () => update(explore(player));
-  const startCombat = () => setCombat(createEncounter(player.level,currentZone.level,{...(equipped??{}),threat:player.worldThreat}));
+  const startCombat = () => { const faction=currentZone.faction==='Neutral'?player.faction:currentZone.faction; const modifiers=getZoneDynamicModifiers(currentZone,player.worldThreat,player.worldResources,player.factionStates.find(f=>f.faction===player.faction)?.influence??100); setCombat(createEncounter(player.level,currentZone.level,{...(equipped??{}),threat:player.worldThreat,faction,encounterChance:modifiers.encounterChance})); };
   const attack = () => {
     if(!combat)return;
     const next=playerAttack(combat); setCombat(next);
