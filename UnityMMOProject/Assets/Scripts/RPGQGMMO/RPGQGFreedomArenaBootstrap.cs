@@ -79,6 +79,8 @@ namespace RPGQGMMO
 
             RPGQGTilemapRuntime tiles = player.GetComponent<RPGQGTilemapRuntime>();
             if (tiles == null) tiles = player.AddComponent<RPGQGTilemapRuntime>();
+            if (player.GetComponent<RPGQGCardArenaDeck>() == null)
+                player.AddComponent<RPGQGCardArenaDeck>();
 
             RPGQGCardGameRuntime cardGame = player.GetComponent<RPGQGCardGameRuntime>();
             if (cardGame == null) cardGame = player.AddComponent<RPGQGCardGameRuntime>();
