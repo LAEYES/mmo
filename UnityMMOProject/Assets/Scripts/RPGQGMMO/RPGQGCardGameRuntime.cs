@@ -15,11 +15,23 @@ namespace RPGQGMMO
         public RPGQGMMOBridge Bridge { get { return bridge; } }
         public RPGQGGameCollector Collector { get { return collector; } }
 
+        private void Start()
+        {
+            string equipped = GetEquippedCardId();
+            if (collector != null && bridge != null && collector.Owns(equipped))
+                bridge.ApplyCard(equipped);
+        }
+
         private void Awake()
         {
             bridge = GetComponent<RPGQGMMOBridge>();
             collector = GetComponent<RPGQGGameCollector>();
             library = GetComponent<RPGQGGameLibrary>();
+        }
+
+        public string GetEquippedCardId()
+        {
+            return PlayerPrefs.GetString("RPGQG_EQUIPPED_CARD", bridge != null ? bridge.equippedCardId : "starter-gardien");
         }
 
         public bool EquipCollectedCard(string cardId)
