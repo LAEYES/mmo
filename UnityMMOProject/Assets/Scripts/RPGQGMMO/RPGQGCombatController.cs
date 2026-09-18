@@ -13,6 +13,7 @@ namespace RPGQGMMO
         public event Action<int> HealthChanged;
         public event Action<int> ExperienceGranted;
         public event Action Died;
+        public event Action<int> DamageDealt;
 
         private float nextAttackTime;
 
@@ -47,6 +48,7 @@ namespace RPGQGMMO
                 if (source != null)
                     source.GrantExperience(25);
                 Died?.Invoke();
+            if (TryGetComponent<RPGQGMMOBridge>(out var bridge)) bridge.NotifyStateChanged("player:dead");
             }
         }
 
