@@ -280,7 +280,8 @@ export function generateWorldEvent(zone: Zone, worldThreat: number, worldResourc
     zoneId: zone.id,
     faction: zone.faction,
     intensity,
-    effect
+    effect,
+    duration: Math.max(1, 6 - intensity)
   };
 }
 
