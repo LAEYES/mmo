@@ -81,3 +81,15 @@ export function getTile(x: number, y: number, width = 20, height = 10): Tile {
 export function canWalkTile(x: number, y: number): boolean {
   return getTile(x, y).walkable;
 }
+
+export type TilePosition = { x: number; y: number };
+
+export function moveTile(position: TilePosition, target: TilePosition): TilePosition {
+  const dx = Math.sign(target.x - position.x);
+  const dy = Math.sign(target.y - position.y);
+  const candidates = Math.abs(target.x - position.x) >= Math.abs(target.y - position.y)
+    ? [{ x: position.x + dx, y: position.y }, { x: position.x, y: position.y + dy }]
+    : [{ x: position.x, y: position.y + dy }, { x: position.x + dx, y: position.y }];
+  for (const next of candidates) if (canWalkTile(next.x, next.y)) return next;
+  return position;
+}
