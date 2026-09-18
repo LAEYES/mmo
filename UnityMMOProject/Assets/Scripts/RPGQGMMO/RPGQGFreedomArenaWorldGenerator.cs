@@ -31,6 +31,7 @@ namespace RPGQGMMO
         public float coverDensity = 0.55f;
         public float spawnRadius = 10f;
         public int biomeGene = 0;
+        public int layoutGene = 0;
 
         [Header("Gameplay")]
         public Vector3 playerSpawn = new Vector3(0f, 1f, 0f);
@@ -78,6 +79,7 @@ namespace RPGQGMMO
             coverDensity = Mathf.Clamp01(coverDensity + Random.Range(-mutationRate, mutationRate));
             spawnRadius = Mathf.Clamp(spawnRadius + Random.Range(-3f, 3f), 6f, 18f);
             biomeGene = (biomeGene + Random.Range(0, 5)) % 5;
+            layoutGene = (layoutGene + Random.Range(0, 4)) % 4;
             enemyCount = Mathf.Clamp(Mathf.RoundToInt(enemyCount * adaptation * (0.75f + combatDensity)), 2, 24);
             seed = unchecked(seed * 1103515245 + 12345 + generation * 97);
             SaveEvolutionState();
@@ -97,6 +99,7 @@ namespace RPGQGMMO
             PlayerPrefs.SetFloat("FA_COVER", coverDensity);
             PlayerPrefs.SetFloat("FA_SPAWN_RADIUS", spawnRadius);
             PlayerPrefs.SetInt("FA_BIOME", biomeGene);
+            PlayerPrefs.SetInt("FA_LAYOUT", layoutGene);
             PlayerPrefs.Save();
         }
 
@@ -113,6 +116,7 @@ namespace RPGQGMMO
             coverDensity = PlayerPrefs.GetFloat("FA_COVER", coverDensity);
             spawnRadius = PlayerPrefs.GetFloat("FA_SPAWN_RADIUS", spawnRadius);
             biomeGene = PlayerPrefs.GetInt("FA_BIOME", biomeGene);
+            layoutGene = PlayerPrefs.GetInt("FA_LAYOUT", layoutGene);
         }
 
         [ContextMenu("Generate FreedomArena")]
