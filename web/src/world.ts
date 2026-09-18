@@ -172,3 +172,12 @@ export function generateScenario(zone: Zone, playerLevel: number, explorationCou
     choices: [...choices]
   };
 }
+
+export function getZoneDynamicModifiers(zone: Zone, worldThreat: number, worldResources: number, factionInfluence: number): { threat: number; resourceYield: number; encounterChance: number } {
+  const factionPressure = Math.max(0, Math.floor((100 - factionInfluence) / 25));
+  return {
+    threat: Math.max(1, zone.level + Math.floor(worldThreat / 3) + factionPressure),
+    resourceYield: Math.max(1, 1 + Math.floor(worldResources / 5) - factionPressure),
+    encounterChance: Math.min(90, 15 + worldThreat * 5 + factionPressure * 10)
+  };
+}
