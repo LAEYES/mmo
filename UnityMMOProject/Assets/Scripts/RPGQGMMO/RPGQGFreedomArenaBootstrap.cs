@@ -58,6 +58,10 @@ namespace RPGQGMMO
             if (quest == null)
                 quest = player.AddComponent<RPGQGQuestRuntime>();
 
+            RPGQGMMOUI ui = player.GetComponent<RPGQGMMOUI>();
+            if (ui == null)
+                ui = player.AddComponent<RPGQGMMOUI>();
+
             RPGQGMMOBridge bridge = player.GetComponent<RPGQGMMOBridge>();
             if (bridge == null)
                 bridge = player.AddComponent<RPGQGMMOBridge>();
