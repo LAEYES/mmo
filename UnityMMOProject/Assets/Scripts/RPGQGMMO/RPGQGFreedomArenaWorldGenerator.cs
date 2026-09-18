@@ -37,6 +37,9 @@ namespace RPGQGMMO
         public float objectiveCaptureRadius = 2.5f;
         public float hazardSafeRadius = 2.25f;
         public int maxActiveEnemies = 8;
+        public float respawnDelay = 5f;
+        public float rewardMultiplier = 1f;
+        private Vector3 lastSpawnPoint;
 
         [Header("Gameplay")]
         public Vector3 playerSpawn = new Vector3(0f, 1f, 0f);
@@ -89,6 +92,7 @@ namespace RPGQGMMO
             hazardDensity = Mathf.Clamp01(hazardDensity + Random.Range(-mutationRate, mutationRate));
             enemyPower = Mathf.Clamp(enemyPower * (1f + Random.Range(-mutationRate * 0.5f, mutationRate * 0.5f)), 0.7f, 1.8f);
             objectiveCaptureRadius = Mathf.Clamp(objectiveCaptureRadius + Random.Range(-0.35f, 0.35f), 1.5f, 4f);
+            rewardMultiplier = Mathf.Clamp(rewardMultiplier * (1f + Random.Range(-mutationRate * 0.35f, mutationRate * 0.35f)), 0.8f, 1.6f);
             seed = unchecked(seed * 1103515245 + 12345 + generation * 97);
             SaveEvolutionState();
             Generate();
@@ -111,6 +115,7 @@ namespace RPGQGMMO
             PlayerPrefs.SetFloat("FA_HAZARD", hazardDensity);
             PlayerPrefs.SetFloat("FA_ENEMY_POWER", enemyPower);
             PlayerPrefs.SetFloat("FA_CAPTURE_RADIUS", objectiveCaptureRadius);
+            PlayerPrefs.SetFloat("FA_REWARD", rewardMultiplier);
             PlayerPrefs.Save();
         }
 
@@ -131,6 +136,7 @@ namespace RPGQGMMO
             hazardDensity = PlayerPrefs.GetFloat("FA_HAZARD", hazardDensity);
             enemyPower = PlayerPrefs.GetFloat("FA_ENEMY_POWER", enemyPower);
             objectiveCaptureRadius = PlayerPrefs.GetFloat("FA_CAPTURE_RADIUS", objectiveCaptureRadius);
+            rewardMultiplier = PlayerPrefs.GetFloat("FA_REWARD", rewardMultiplier);
         }
 
         [ContextMenu("Generate FreedomArena")]
@@ -148,6 +154,7 @@ namespace RPGQGMMO
             float spread = Mathf.Lerp(7f, 14f, objectiveSpread);
             CreateObjective(arena.transform, new Vector3(0f, 0.1f, spread));
             CreateObjective(arena.transform, new Vector3(spread, 0.1f, 0f));
+            lastSpawnPoint = GetPlayerSpawnPoint();
             CreateHazards(arena.transform, random);
             CreateObstacles(arena.transform);
             CreateEnemies(arena.transform);
