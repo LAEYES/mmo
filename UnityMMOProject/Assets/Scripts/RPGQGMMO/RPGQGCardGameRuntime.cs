@@ -29,6 +29,30 @@ namespace RPGQGMMO
             library = GetComponent<RPGQGGameLibrary>();
         }
 
+        public int GetCardLevel(string cardId)
+        {
+            if (collector == null || !collector.Owns(cardId)) return 0;
+            return Mathf.Max(1, PlayerPrefs.GetInt("RPGQG_CARD_LEVEL_" + cardId, 1));
+        }
+
+        public void AddCardExperience(string cardId, int amount)
+        {
+            if (collector == null || !collector.Owns(cardId) || amount <= 0) return;
+            int level = GetCardLevel(cardId);
+            int xp = PlayerPrefs.GetInt("RPGQG_CARD_XP_" + cardId, 0) + amount;
+            int needed = 100 + (level - 1) * 50;
+            while (xp >= needed)
+            {
+                xp -= needed;
+                level++;
+                needed = 100 + (level - 1) * 50;
+            }
+            PlayerPrefs.SetInt("RPGQG_CARD_LEVEL_" + cardId, level);
+            PlayerPrefs.SetInt("RPGQG_CARD_XP_" + cardId, xp);
+            PlayerPrefs.Save();
+            if (bridge != null) bridge.NotifyStateChanged("card:level:" + cardId + ":" + level);
+        }
+
         public string GetEquippedCardId()
         {
             return PlayerPrefs.GetString("RPGQG_EQUIPPED_CARD", bridge != null ? bridge.equippedCardId : "starter-gardien");
