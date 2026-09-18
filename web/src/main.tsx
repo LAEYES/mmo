@@ -10,6 +10,9 @@ function WorldCanvas({ zoneId, waypoint, worldThreat, worldResources, exploratio
   const ref = useRef<HTMLCanvasElement>(null);
   const position = useRef({ x: 0, y: 0 });
   useEffect(() => {
+    position.current = { x: 0, y: 0 };
+  }, [zoneId]);
+  useEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
     const onPointer = (event: PointerEvent) => {
@@ -241,13 +244,14 @@ function App() {
       if (!cancelled && result.player) {
         savePlayer(result.player);
         setPlayer(result.player);
+        setWorldTile(result.player.worldTile);
       }
     }).catch(() => {});
     return () => { cancelled = true; };
   }, []);
 
   const chooseFaction = (faction: Faction) => update({ ...player, faction });
-  const moveTo = (zoneId: string) => { const zone=getZone(zoneId); if(canEnterZone(player.level,zone)) update({...player,zoneId:zone.id,lastDiscovery:`Arrived at ${zone.name}`,worldTile:{x:0,y:0}}); };
+  const moveTo = (zoneId: string) => { const zone=getZone(zoneId); if(canEnterZone(player.level,zone)) { const next={...player,zoneId:zone.id,lastDiscovery:`Arrived at ${zone.name}`,worldTile:{x:0,y:0}}; setWorldTile(next.worldTile); setWaypoint(null); setAutoMove(false); setPathLength(0); update(next); } };
   const doExplore = () => update(explore(player));
   const startCombat = () => { const faction=currentZone.faction==='Neutral'?player.faction:currentZone.faction; const modifiers=getZoneDynamicModifiers(currentZone,player.worldThreat,player.worldResources,player.factionStates.find(f=>f.faction===player.faction)?.influence??100); setCombat(createEncounter(player.level,currentZone.level,{...(equipped??{}),threat:player.worldThreat,faction,encounterChance:modifiers.encounterChance})); };
   const attack = () => {
