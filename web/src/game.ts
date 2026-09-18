@@ -13,7 +13,7 @@ export type PlayerState = {
 
 export const factions: Faction[] = ['Aegis', 'Nomads', 'Eclipse'];
 export function createStarterPlayer(name = 'Arena Player'): PlayerState {
-  return { name, level:1, xp:0, faction:'Aegis', victories:0, cards:[], zoneId:'outpost', explorationCount:0, lastDiscovery:'', arenaWins:0, equippedCardId:null };
+  return { name, level:1, xp:0, faction:'Aegis', victories:0, cards:[], zoneId:'outpost', explorationCount:0, lastDiscovery:'', arenaWins:0, equippedCardId:null,fusionMaterials:0 };
 }
 function cardStats(wins:number, rarity:CardRarity):Omit<Card,'id'|'name'> {
   const m=rarity==='Legendary'?4:rarity==='Epic'?3:rarity==='Rare'?2:1;
@@ -25,6 +25,19 @@ export function grantVictory(state:PlayerState):PlayerState {
   const card:Card={id:`victory-${victories}`,name:`Arena Card #${victories}`,...cardStats(victories,rarity)};
   return {...state,victories,xp,level,cards:[...state.cards,card]};
 }
+export function applyPoiReward(state: PlayerState, action: 'explore' | 'loot' | 'encounter'): PlayerState {
+  const xpGain = action === 'explore' ? 15 : action === 'loot' ? 10 : 20;
+  const materialsGain = action === 'loot' ? 1 : 0;
+  const xp = state.xp + xpGain;
+  return {
+    ...state,
+    xp,
+    level: 1 + Math.floor(xp / 100),
+    explorationCount: action === 'explore' ? state.explorationCount + 1 : state.explorationCount,
+    fusionMaterials: state.fusionMaterials + materialsGain
+  };
+}
+
 export function grantArenaReward(state:PlayerState):PlayerState {
   const arenaWins=state.arenaWins+1,xpGain=40+arenaWins*5,xp=state.xp+xpGain,level=1+Math.floor(xp/100);
   const rarity:CardRarity=arenaWins%10===0?'Epic':arenaWins%3===0?'Rare':'Common';
