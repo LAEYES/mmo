@@ -25,6 +25,13 @@ namespace RPGQGMMO
         public int playerDeaths;
         public int enemiesDefeated;
 
+        [Header("Evolving Genome")]
+        public float combatDensity = 0.45f;
+        public float objectiveSpread = 0.7f;
+        public float coverDensity = 0.55f;
+        public float spawnRadius = 10f;
+        public int biomeGene = 0;
+
         [Header("Gameplay")]
         public Vector3 playerSpawn = new Vector3(0f, 1f, 0f);
 
@@ -66,7 +73,12 @@ namespace RPGQGMMO
             float pressure = Mathf.Clamp01((playerDeaths * 0.08f) - (enemiesDefeated * 0.015f));
             float adaptation = Mathf.Clamp(1f + pressure + Random.Range(-mutationRate, mutationRate), 0.7f, 1.8f);
             obstacleCount = Mathf.Clamp(Mathf.RoundToInt(obstacleCount * adaptation), 8, 60);
-            enemyCount = Mathf.Clamp(Mathf.RoundToInt(enemyCount * adaptation), 2, 24);
+            combatDensity = Mathf.Clamp01(combatDensity + Random.Range(-mutationRate, mutationRate));
+            objectiveSpread = Mathf.Clamp01(objectiveSpread + Random.Range(-mutationRate, mutationRate));
+            coverDensity = Mathf.Clamp01(coverDensity + Random.Range(-mutationRate, mutationRate));
+            spawnRadius = Mathf.Clamp(spawnRadius + Random.Range(-3f, 3f), 6f, 18f);
+            biomeGene = (biomeGene + Random.Range(0, 5)) % 5;
+            enemyCount = Mathf.Clamp(Mathf.RoundToInt(enemyCount * adaptation * (0.75f + combatDensity)), 2, 24);
             seed = unchecked(seed * 1103515245 + 12345 + generation * 97);
             SaveEvolutionState();
             Generate();
@@ -80,6 +92,11 @@ namespace RPGQGMMO
             PlayerPrefs.SetInt("FA_ENEMIES", enemyCount);
             PlayerPrefs.SetInt("FA_DEATHS", playerDeaths);
             PlayerPrefs.SetInt("FA_KILLS", enemiesDefeated);
+            PlayerPrefs.SetFloat("FA_COMBAT", combatDensity);
+            PlayerPrefs.SetFloat("FA_OBJECTIVE", objectiveSpread);
+            PlayerPrefs.SetFloat("FA_COVER", coverDensity);
+            PlayerPrefs.SetFloat("FA_SPAWN_RADIUS", spawnRadius);
+            PlayerPrefs.SetInt("FA_BIOME", biomeGene);
             PlayerPrefs.Save();
         }
 
@@ -91,6 +108,11 @@ namespace RPGQGMMO
             enemyCount = PlayerPrefs.GetInt("FA_ENEMIES", enemyCount);
             playerDeaths = PlayerPrefs.GetInt("FA_DEATHS", 0);
             enemiesDefeated = PlayerPrefs.GetInt("FA_KILLS", 0);
+            combatDensity = PlayerPrefs.GetFloat("FA_COMBAT", combatDensity);
+            objectiveSpread = PlayerPrefs.GetFloat("FA_OBJECTIVE", objectiveSpread);
+            coverDensity = PlayerPrefs.GetFloat("FA_COVER", coverDensity);
+            spawnRadius = PlayerPrefs.GetFloat("FA_SPAWN_RADIUS", spawnRadius);
+            biomeGene = PlayerPrefs.GetInt("FA_BIOME", biomeGene);
         }
 
         [ContextMenu("Generate FreedomArena")]
@@ -105,8 +127,9 @@ namespace RPGQGMMO
 
             CreateFloor(arena.transform);
             CreatePortal(arena.transform, new Vector3(0f, 0f, 0f));
-            CreateObjective(arena.transform, new Vector3(0f, 0.1f, 10f));
-            CreateObjective(arena.transform, new Vector3(10f, 0.1f, 0f));
+            float spread = Mathf.Lerp(7f, 14f, objectiveSpread);
+            CreateObjective(arena.transform, new Vector3(0f, 0.1f, spread));
+            CreateObjective(arena.transform, new Vector3(spread, 0.1f, 0f));
             CreateObstacles(arena.transform);
             CreateEnemies(arena.transform);
 
@@ -146,7 +169,7 @@ namespace RPGQGMMO
 
         private void CreateObstacles(Transform parent)
         {
-            for (int i = 0; i < obstacleCount; i++)
+            for (int i = 0; i < Mathf.RoundToInt(obstacleCount * Mathf.Lerp(0.65f, 1.35f, coverDensity)); i++)
             {
                 float x = Mathf.Round((float)(random.NextDouble() * (width - 4) - (width - 4) / 2f)) * cellSize;
                 float z = Mathf.Round((float)(random.NextDouble() * (depth - 4) - (depth - 4) / 2f)) * cellSize;
@@ -169,7 +192,7 @@ namespace RPGQGMMO
             for (int i = 0; i < enemyCount; i++)
             {
                 float angle = (Mathf.PI * 2f * i) / Mathf.Max(1, enemyCount);
-                float radius = 8f + (float)random.NextDouble() * 7f;
+                float radius = Mathf.Clamp(spawnRadius + (float)random.NextDouble() * 5f - 2.5f, 6f, 20f);
 
                 GameObject enemy = GameObject.CreatePrimitive(PrimitiveType.Capsule);
                 enemy.name = "SpectreDuVide_" + i;
