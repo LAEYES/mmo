@@ -62,6 +62,27 @@ function WorldCanvas({ zoneId, onTileMove }: { zoneId: string; onTileMove: (tile
         ctx.fillStyle='#d8b56a'; ctx.beginPath(); ctx.arc(sx,sy,6,0,Math.PI*2); ctx.fill();
         ctx.fillStyle='#ead9ad'; ctx.font='10px Inter,sans-serif'; ctx.fillText(poi.name,sx+9,sy+3);
       });
+      const path = waypoint ? findTilePath(position.current, waypoint) : [];
+      if (path.length > 1) {
+        ctx.strokeStyle = '#d8b56a';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        path.forEach((p, i) => {
+          const sx=(p.x-cameraX)*tile+tile/2, sy=(p.y-cameraY)*tile+tile/2;
+          if (i===0) ctx.moveTo(sx,sy); else ctx.lineTo(sx,sy);
+        });
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      if (waypoint) {
+        const wx=(waypoint.x-cameraX)*tile+tile/2, wy=(waypoint.y-cameraY)*tile+tile/2;
+        if(wx>=0&&wy>=0&&wx<=rect.width&&wy<=rect.height){
+          ctx.strokeStyle='#d8b56a'; ctx.lineWidth=2;
+          ctx.beginPath(); ctx.arc(wx,wy,11,0,Math.PI*2); ctx.stroke();
+          ctx.fillStyle='#ead9ad'; ctx.font='600 10px Inter,sans-serif'; ctx.fillText('WAYPOINT',wx-27,wy-15);
+        }
+      }
       zone.pointsOfInterest.forEach((name,index)=>{
         const x=24+((index+1)*(rect.width-48))/(zone.pointsOfInterest.length+1), y=rect.height*(index%2===0?.42:.68);
         ctx.fillStyle='#9db4e8'; ctx.beginPath(); ctx.arc(x,y,7,0,Math.PI*2); ctx.fill();
