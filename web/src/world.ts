@@ -64,3 +64,20 @@ export function getZoneStatus(playerLevel: number, zone: Zone, currentZoneId?: s
   if (zone.id === currentZoneId) return 'current';
   return playerLevel >= zone.level ? 'available' : 'locked';
 }
+
+export type TileKind = 'ground' | 'water' | 'rock' | 'wall';
+export type Tile = { x: number; y: number; kind: TileKind; walkable: boolean };
+
+export function getTile(x: number, y: number, width = 20, height = 10): Tile {
+  if (x < 0 || y < 0 || x >= width || y >= height) return { x, y, kind: 'wall', walkable: false };
+  const edge = x === 0 || y === 0 || x === width - 1 || y === height - 1;
+  const pattern = (x * 13 + y * 7) % 17;
+  if (edge) return { x, y, kind: 'wall', walkable: false };
+  if (pattern === 0 || pattern === 1) return { x, y, kind: 'water', walkable: false };
+  if (pattern === 2) return { x, y, kind: 'rock', walkable: false };
+  return { x, y, kind: 'ground', walkable: true };
+}
+
+export function canWalkTile(x: number, y: number): boolean {
+  return getTile(x, y).walkable;
+}
