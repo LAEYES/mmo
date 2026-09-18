@@ -34,6 +34,9 @@ namespace RPGQGMMO
         public int layoutGene = 0;
         public float hazardDensity = 0.25f;
         public float enemyPower = 1f;
+        public float objectiveCaptureRadius = 2.5f;
+        public float hazardSafeRadius = 2.25f;
+        public int maxActiveEnemies = 8;
 
         [Header("Gameplay")]
         public Vector3 playerSpawn = new Vector3(0f, 1f, 0f);
@@ -82,9 +85,10 @@ namespace RPGQGMMO
             spawnRadius = Mathf.Clamp(spawnRadius + Random.Range(-3f, 3f), 6f, 18f);
             biomeGene = (biomeGene + Random.Range(0, 5)) % 5;
             layoutGene = (layoutGene + Random.Range(0, 4)) % 4;
-            enemyCount = Mathf.Clamp(Mathf.RoundToInt(enemyCount * adaptation * (0.75f + combatDensity)), 2, 24);
+            enemyCount = Mathf.Clamp(Mathf.RoundToInt(enemyCount * adaptation * (0.75f + combatDensity)), 2, maxActiveEnemies);
             hazardDensity = Mathf.Clamp01(hazardDensity + Random.Range(-mutationRate, mutationRate));
             enemyPower = Mathf.Clamp(enemyPower * (1f + Random.Range(-mutationRate * 0.5f, mutationRate * 0.5f)), 0.7f, 1.8f);
+            objectiveCaptureRadius = Mathf.Clamp(objectiveCaptureRadius + Random.Range(-0.35f, 0.35f), 1.5f, 4f);
             seed = unchecked(seed * 1103515245 + 12345 + generation * 97);
             SaveEvolutionState();
             Generate();
@@ -106,6 +110,7 @@ namespace RPGQGMMO
             PlayerPrefs.SetInt("FA_LAYOUT", layoutGene);
             PlayerPrefs.SetFloat("FA_HAZARD", hazardDensity);
             PlayerPrefs.SetFloat("FA_ENEMY_POWER", enemyPower);
+            PlayerPrefs.SetFloat("FA_CAPTURE_RADIUS", objectiveCaptureRadius);
             PlayerPrefs.Save();
         }
 
@@ -125,6 +130,7 @@ namespace RPGQGMMO
             layoutGene = PlayerPrefs.GetInt("FA_LAYOUT", layoutGene);
             hazardDensity = PlayerPrefs.GetFloat("FA_HAZARD", hazardDensity);
             enemyPower = PlayerPrefs.GetFloat("FA_ENEMY_POWER", enemyPower);
+            objectiveCaptureRadius = PlayerPrefs.GetFloat("FA_CAPTURE_RADIUS", objectiveCaptureRadius);
         }
 
         [ContextMenu("Generate FreedomArena")]
