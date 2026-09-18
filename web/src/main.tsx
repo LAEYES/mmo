@@ -97,8 +97,8 @@ function WorldCanvas({ zoneId, waypoint, worldThreat, worldResources, exploratio
       const eventSeed = worldEvent.id.split(':').reduce((sum, part) => sum + Array.from(part).reduce((value, char) => value + char.charCodeAt(0), 0), 0);
       const eventPoint = { x: 4 + (eventSeed % 52), y: 4 + (Math.floor(eventSeed / 52) % 32) };
       const eventDistance = Math.abs(position.current.x - eventPoint.x) + Math.abs(position.current.y - eventPoint.y);
-      const eventProgress = Math.min(100, Math.round((Math.min(worldThreat + explorationCount, worldThreat + explorationCount + worldResources) / Math.max(1, worldThreat + explorationCount + 4)) * 100));
-      const eventPhase = eventProgress >= 80 ? 'EXPIRING' : eventProgress >= 50 ? 'URGENT' : 'ACTIVE';
+      const eventProgress = getWorldEventProgress(worldEvent, worldEventAge);
+      const eventPhase = getWorldEventPhase(worldEvent, worldEventAge).toUpperCase();
       const eventRadius = eventPhase === 'EXPIRING' ? 30 : eventPhase === 'URGENT' ? 26 : 22;
       if (eventDistance <= 8) {
         ctx.strokeStyle=eventPhase==='EXPIRING'?'rgba(240,100,100,.8)':eventPhase==='URGENT'?'rgba(240,180,100,.7)':'rgba(120,190,230,.6)';
