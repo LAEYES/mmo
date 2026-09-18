@@ -75,6 +75,10 @@ namespace RPGQGMMO
 
             RPGQGGameLibrary library = player.GetComponent<RPGQGGameLibrary>();
             if (library == null) library = player.AddComponent<RPGQGGameLibrary>();
+            library.RegisterDefaultArenaEmulations();
+
+            RPGQGTilemapRuntime tiles = player.GetComponent<RPGQGTilemapRuntime>();
+            if (tiles == null) tiles = player.AddComponent<RPGQGTilemapRuntime>();
 
             RPGQGCardGameRuntime cardGame = player.GetComponent<RPGQGCardGameRuntime>();
             if (cardGame == null) cardGame = player.AddComponent<RPGQGCardGameRuntime>();
