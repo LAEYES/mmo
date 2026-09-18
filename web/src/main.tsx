@@ -170,6 +170,16 @@ function App() {
     if (path.length <= 1) {
       setAutoMove(false);
       setPathLength(0);
+      const eventPoint = { x: Math.min(58, Math.max(1, 10 + player.worldThreat * 2)), y: Math.min(38, Math.max(1, 8 + player.explorationCount * 2)) };
+      if (worldTile.x === eventPoint.x && worldTile.y === eventPoint.y) {
+        const next = applyWorldEventState(player, worldEvent.effect, worldEvent.intensity, worldEvent.faction);
+        update(next);
+        setWorldMessage('Territorial event triggered: ' + worldEvent.title);
+        setWorldEvent(generateWorldEvent(currentZone, next.worldThreat, next.worldResources, next.explorationCount, next.factionStates.find(f => f.faction === currentZone.faction)?.influence ?? 100));
+        setWaypoint(null);
+        setSelectedSignal(null);
+        return;
+      }
       const poi = getNearestPoi(currentZone, worldTile);
       const npc = zoneNpcs.find(candidate => candidate.x === worldTile.x && candidate.y === worldTile.y);
       if (poi && poi.distance === 0) {
