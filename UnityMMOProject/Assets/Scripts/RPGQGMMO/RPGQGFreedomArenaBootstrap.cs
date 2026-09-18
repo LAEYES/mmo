@@ -71,6 +71,9 @@ namespace RPGQGMMO
             RPGQGGameCollector collector = player.GetComponent<RPGQGGameCollector>();
             if (collector == null) collector = player.AddComponent<RPGQGGameCollector>();
 
+            RPGQGGameLibrary library = player.GetComponent<RPGQGGameLibrary>();
+            if (library == null) library = player.AddComponent<RPGQGGameLibrary>();
+
             RPGQGCharacterProfileUI profileUI = player.GetComponent<RPGQGCharacterProfileUI>();
             if (profileUI == null) profileUI = player.AddComponent<RPGQGCharacterProfileUI>();
 
