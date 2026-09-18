@@ -68,13 +68,14 @@ export function getZoneStatus(playerLevel: number, zone: Zone, currentZoneId?: s
 export type TileKind = 'ground' | 'water' | 'rock' | 'wall';
 export type Tile = { x: number; y: number; kind: TileKind; walkable: boolean };
 
-export function getTile(x: number, y: number, width = 20, height = 10): Tile {
+export function getTile(x: number, y: number, width = 60, height = 40): Tile {
   if (x < 0 || y < 0 || x >= width || y >= height) return { x, y, kind: 'wall', walkable: false };
   const edge = x === 0 || y === 0 || x === width - 1 || y === height - 1;
-  const pattern = (x * 13 + y * 7) % 17;
+  const biome = Math.floor((x + y) / 12) % 4;
+  const pattern = (x * 13 + y * 7 + biome * 5) % 23;
   if (edge) return { x, y, kind: 'wall', walkable: false };
-  if (pattern === 0 || pattern === 1) return { x, y, kind: 'water', walkable: false };
-  if (pattern === 2) return { x, y, kind: 'rock', walkable: false };
+  if (biome === 2 && pattern < 4) return { x, y, kind: 'water', walkable: false };
+  if ((biome === 1 || biome === 3) && pattern < 3) return { x, y, kind: 'rock', walkable: false };
   return { x, y, kind: 'ground', walkable: true };
 }
 
