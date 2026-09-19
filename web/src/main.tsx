@@ -17,7 +17,9 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
   const remotePlayersRef = useRef(remotePlayers);
   const pathCache = useRef<{ key: string; path: { x: number; y: number }[] }>({ key: '', path: [] });
   const fxTime = useRef(0);
+  const worldEventAgeRef = useRef(worldEventAge);
   useEffect(() => { remotePlayersRef.current = remotePlayers; }, [remotePlayers]);
+  useEffect(() => { worldEventAgeRef.current = worldEventAge; }, [worldEventAge]);
   useEffect(() => {
     position.current = { x: 0, y: 0 };
   }, [zoneId]);
@@ -151,7 +153,7 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
       dynamicCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
       dynamicCtx.clearRect(0, 0, rect.width, rect.height);
       const currentRemotePlayers = remotePlayersRef.current.filter(isFreshRemotePresence);
-      const eventPhase=getWorldEventPhase(worldEvent,worldEventAge).toUpperCase();
+      const eventPhase=getWorldEventPhase(worldEvent,worldEventAgeRef.current).toUpperCase();
       const eventPoint=getWorldEventPoint(worldEvent);
       const ex=(eventPoint.x-cameraX)*tile+tile/2,ey=(eventPoint.y-cameraY)*tile+tile/2;
       if(ex>=-40&&ey>=-40&&ex<=rect.width+40&&ey<=rect.height+40){
@@ -229,7 +231,7 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
     const onResize = () => draw(16.67);
     window.addEventListener('resize', onResize);
     return()=>{ window.cancelAnimationFrame(frame); window.removeEventListener('resize',onResize); };
-  },[zoneId,waypoint,worldTile.x,worldTile.y,worldThreat,worldResources,explorationCount,factionInfluence,worldEvent,worldEventAge]);
+  },[zoneId,waypoint,worldTile.x,worldTile.y,worldThreat,worldResources,explorationCount,factionInfluence,worldEvent]);
   return <div className="world-canvas-layer">
     <canvas ref={baseRef} className="tile-canvas tile-canvas-base" aria-label={`Tile map of ${getZone(zoneId).name}`} />
     <canvas ref={dynamicRef} className="tile-canvas tile-canvas-dynamic" aria-hidden="true" />
