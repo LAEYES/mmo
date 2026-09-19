@@ -157,6 +157,19 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
       const eventPoint=getWorldEventPoint(worldEvent);
       const ex=(eventPoint.x-cameraX)*tile+tile/2,ey=(eventPoint.y-cameraY)*tile+tile/2;
       if(ex>=-40&&ey>=-40&&ex<=rect.width+40&&ey<=rect.height+40){
+        const sparkPhase = fxTime.current / 520;
+        dynamicCtx.save();
+        for(let i=0;i<6;i++){
+          const angle = sparkPhase * (0.7 + i * 0.08) + i * Math.PI / 3;
+          const radius = 14 + ((sparkPhase * 9 + i * 11) % 22);
+          const sparkX = ex + Math.cos(angle) * radius;
+          const sparkY = ey + Math.sin(angle) * radius;
+          const sparkAlpha = 0.18 + 0.18 * (0.5 + 0.5 * Math.sin(sparkPhase * 2 + i));
+          dynamicCtx.globalAlpha = sparkAlpha;
+          dynamicCtx.fillStyle = worldEvent.effect === 'threat' ? '#ef7777' : '#d8b56a';
+          dynamicCtx.fillRect(sparkX, sparkY, 2, 2);
+        }
+        dynamicCtx.restore();
         const pulse=0.5+0.5*Math.sin(fxTime.current/320);
         const eventColor=eventPhase==='EXPIRING'?'#ef7777':eventPhase==='URGENT'?'#e5b26d':'#8fbfda';
         dynamicCtx.save();dynamicCtx.globalAlpha=0.18+pulse*0.16;dynamicCtx.strokeStyle=eventColor;dynamicCtx.lineWidth=2;
