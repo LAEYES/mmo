@@ -32,17 +32,17 @@
 - `styles.css` reste dédié à la présentation.
 - `supabase.ts` assure l'adaptation entre état local et persistance.
 
-## Validation
+## Validation CI
 
-Le build Web doit rester compatible avec :
+Le workflow Web build utilise Node 22 et :
 
 ```bash
 npm install --no-package-lock
 npm run build
 ```
 
-Chaque nouvelle mécanique doit préserver la sauvegarde joueur, le déplacement déterministe et la séparation entre logique de jeu et interface.
+Le run GitHub Actions #18 sur le commit `43bcbed4aab77b9f2cec54547fda887576b98d32` a été vérifié avec le résultat **success**.
 
-## Prochaine étape
+## Prochaine tranche
 
 Enrichir progressivement les interactions PNJ, les événements mondiaux, les combats et la progression des cartes sans casser le socle Web/Lua/Unity existant.
