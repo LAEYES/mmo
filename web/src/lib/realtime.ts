@@ -21,7 +21,20 @@ export type ZonePresenceCallbacks = {
 function isZonePresence(value: unknown): value is ZonePresence {
   if (!value || typeof value !== 'object') return false;
   const item = value as Partial<ZonePresence>;
-  return typeof item.playerId === 'string' && typeof item.name === 'string' && typeof item.zoneId === 'string' && typeof item.faction === 'string' && typeof item.updatedAt === 'number' && Boolean(item.worldTile) && typeof item.worldTile?.x === 'number' && typeof item.worldTile?.y === 'number';
+  return (
+    typeof item.playerId === 'string' &&
+    typeof item.name === 'string' &&
+    typeof item.zoneId === 'string' &&
+    typeof item.faction === 'string' &&
+    typeof item.updatedAt === 'number' &&
+    Boolean(item.worldTile) &&
+    typeof item.worldTile?.x === 'number' &&
+    typeof item.worldTile?.y === 'number'
+  );
+}
+
+function toZonePresence(value: unknown): ZonePresence | null {
+  return isZonePresence(value) ? value : null;
 }
 
 function topic(zoneId: string) {
@@ -33,24 +46,33 @@ export async function joinZonePresence(
   player: ZonePresence,
   callbacks: ZonePresenceCallbacks = {},
 ): Promise<{ channel: RealtimeChannel | null; stop: () => Promise<void> }> {
-  if (!supabase) return { channel: null, stop: async () => {} };
+  const client = supabase;
+  if (!client) return { channel: null, stop: async () => {} };
 
-  const channel = supabase.channel(topic(zoneId), {
+  const channel = client.channel(topic(zoneId), {
     config: { presence: { key: player.playerId } },
   });
 
   channel.on('presence', { event: 'sync' }, () => {
     const state = channel.presenceState<ZonePresence>();
-    const players = Object.values(state).flatMap(entries => entries.filter(isZonePresence));
+    const players = Object.values(state)
+      .flatMap(entries => entries.map(entry => toZonePresence(entry as unknown)))
+      .filter((entry): entry is ZonePresence => entry !== null);
     callbacks.onSync?.(players);
   });
 
   channel.on('presence', { event: 'join' }, ({ newPresences }) => {
-    for (const entry of newPresences) if (isZonePresence(entry)) callbacks.onJoin?.(entry);
+    for (const entry of newPresences) {
+      const playerPresence = toZonePresence(entry as unknown);
+      if (playerPresence) callbacks.onJoin?.(playerPresence);
+    }
   });
 
   channel.on('presence', { event: 'leave' }, ({ leftPresences }) => {
-    for (const entry of leftPresences) if (isZonePresence(entry)) callbacks.onLeave?.(entry.playerId);
+    for (const entry of leftPresences) {
+      const playerPresence = toZonePresence(entry as unknown);
+      if (playerPresence) callbacks.onLeave?.(playerPresence.playerId);
+    }
   });
 
   await channel.subscribe(async status => {
@@ -61,7 +83,7 @@ export async function joinZonePresence(
     channel,
     stop: async () => {
       await channel.untrack();
-      if (supabase) await supabase.removeChannel(channel);
+      await client.removeChannel(channel);
     },
   };
 }
