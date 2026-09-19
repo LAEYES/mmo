@@ -10,6 +10,7 @@ import { equipCard, factions, fuseCards, getCardFusionCost, getEquippedCard, gra
 function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources, explorationCount, factionInfluence, worldEvent, worldEventAge, remotePlayers, onTileMove, onSignalSelect }: { zoneId: string; waypoint: {x:number;y:number}|null; worldTile: {x:number;y:number}; worldThreat: number; worldResources: number; explorationCount: number; factionInfluence: number; worldEvent: import('./world').WorldEvent; worldEventAge: number; remotePlayers: ZonePresence[]; onTileMove: (tileX: number, tileY: number) => void; onSignalSelect: (signal: {type:'poi'|'npc'|'event'; name:string; x:number; y:number}) => void }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const position = useRef({ x: 0, y: 0 });
+  const remoteVisuals = useRef<Record<string, { x: number; y: number }>>({});
   useEffect(() => {
     position.current = { x: 0, y: 0 };
   }, [zoneId]);
@@ -149,14 +150,26 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
       const pressure = getZoneFactionPressure(zone, factionInfluence);
       const pressureColor = pressure.status === 'dominant' ? 'rgba(120,180,255,.75)' : pressure.status === 'contested' ? 'rgba(220,190,110,.75)' : pressure.status === 'weak' ? 'rgba(230,110,130,.8)' : 'rgba(160,180,210,.65)';
       ctx.strokeStyle=pressureColor;ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.strokeRect(8,8,rect.width-16,rect.height-16);ctx.setLineDash([]);
-      remotePlayers.forEach(remote=>{const sx=(remote.worldTile.x-cameraX)*tile+tile/2,sy=(remote.worldTile.y-cameraY)*tile+tile/2;if(sx<-20||sy<-20||sx>rect.width+20||sy>rect.height+20)return;ctx.fillStyle='#8fbfda';ctx.beginPath();ctx.arc(sx,sy,7,0,Math.PI*2);ctx.fill();ctx.fillStyle='#dce7ff';ctx.font='600 9px Inter,sans-serif';ctx.fillText(remote.name,sx+9,sy+3);});
+      const activeIds = new Set(remotePlayers.map(remote => remote.playerId));
+      Object.keys(remoteVisuals.current).forEach(id => { if (!activeIds.has(id)) delete remoteVisuals.current[id]; });
+      remotePlayers.forEach(remote=>{
+        const visual = remoteVisuals.current[remote.playerId] ?? (remoteVisuals.current[remote.playerId] = { x: remote.worldTile.x, y: remote.worldTile.y });
+        visual.x += (remote.worldTile.x - visual.x) * 0.22;
+        visual.y += (remote.worldTile.y - visual.y) * 0.22;
+        const sx=(visual.x-cameraX)*tile+tile/2,sy=(visual.y-cameraY)*tile+tile/2;
+        if(sx<-20||sy<-20||sx>rect.width+20||sy>rect.height+20)return;
+        ctx.fillStyle='#8fbfda';ctx.beginPath();ctx.arc(sx,sy,7,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#dce7ff';ctx.font='600 9px Inter,sans-serif';ctx.fillText(remote.name,sx+9,sy+3);
+      });
       const px=(position.current.x-cameraX)*tile+tile/2, py=(position.current.y-cameraY)*tile+tile/2;
       ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(px,py,9,0,Math.PI*2); ctx.fill();
       ctx.strokeStyle='#9db4e8'; ctx.stroke(); ctx.fillStyle='#c9d7f5'; ctx.font='600 11px Inter,sans-serif'; ctx.fillText('PLAYER',px-22,py+24);
     };
-    draw();
+    let frame = 0;
+    const animate = () => { draw(); frame = window.requestAnimationFrame(animate); };
+    animate();
     window.addEventListener('resize',draw);
-    return()=>window.removeEventListener('resize',draw);
+    return()=>{ window.cancelAnimationFrame(frame); window.removeEventListener('resize',draw); };
   },[zoneId,waypoint,worldTile.x,worldTile.y,worldThreat,worldResources,explorationCount,factionInfluence,worldEvent,worldEventAge,remotePlayers]);
   return <canvas ref={ref} className="tile-canvas" aria-label={`Tile map of ${getZone(zoneId).name}`} />;
 }
