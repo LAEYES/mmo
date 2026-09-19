@@ -211,7 +211,9 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
         dynamicCtx.fillStyle='#dce7ff';dynamicCtx.font='600 9px Inter,sans-serif';dynamicCtx.fillText(remote.name+' · '+remote.faction,sx+9,sy+3);
       });
       const ambientPhase = fxTime.current / 1800;
-      for(let i=0;i<10;i++){
+      const ambientWeather = getZoneEnvironment(zone, worldThreat, worldResources, explorationCount).weather;
+      const ambientCount = ambientWeather === 'storm' ? 16 : ambientWeather === 'mist' ? 13 : ambientWeather === 'frost' ? 12 : 10;
+      for(let i=0;i<ambientCount;i++){
         const ax=((i*83 + Math.floor(ambientPhase*12)*17)%(rect.width+80))-40;
         const ay=((i*47 + Math.floor(ambientPhase*8)*29)%(rect.height+80))-40;
         const shimmer=0.16+0.10*Math.sin(ambientPhase*2+i);
