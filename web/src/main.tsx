@@ -7,6 +7,8 @@ import { canEnterZone, canWalkTile,  findTilePath, getNearestPoi, interactWithPo
 import { createEncounter, getCombatReward, getCombatSummary, playerAttack, type CombatState } from './combat';
 import { equipCard, factions, fuseCards, getCardFusionCost, getEquippedCard, grantArenaReward, applyPoiReward, applyScenarioChoice, applyCombatOutcome, applyWorldEventState, applyNpcInteraction, explore, loadPlayer, savePlayer, upgradeCard, type Faction } from './game';
 
+function isFreshRemotePresence(entry: ZonePresence) { return Date.now() - entry.updatedAt <= 15000; }
+
 function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources, explorationCount, factionInfluence, worldEvent, worldEventAge, remotePlayers, onTileMove, onSignalSelect }: { zoneId: string; waypoint: {x:number;y:number}|null; worldTile: {x:number;y:number}; worldThreat: number; worldResources: number; explorationCount: number; factionInfluence: number; worldEvent: import('./world').WorldEvent; worldEventAge: number; remotePlayers: ZonePresence[]; onTileMove: (tileX: number, tileY: number) => void; onSignalSelect: (signal: {type:'poi'|'npc'|'event'; name:string; x:number; y:number}) => void }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const position = useRef({ x: 0, y: 0 });
@@ -246,8 +248,6 @@ function App() {
     setPlayer(next);
     savePlayer(next);
   };
-  const isFreshRemotePresence = (entry: ZonePresence) => Date.now() - entry.updatedAt <= 15000;
-
   const upsertRemotePlayer = (entry: ZonePresence) => {
     const id = presencePlayerIdRef.current;
     if (!id || entry.playerId === id || !isFreshRemotePresence(entry)) return;
