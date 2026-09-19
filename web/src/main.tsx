@@ -60,28 +60,46 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    const staticCanvas = document.createElement('canvas');
+    const staticCtx = staticCanvas.getContext('2d');
+    if (!staticCtx) return;
+    let staticKey = '';
     const draw = (deltaMs = 16.67) => {
       const rect = canvas.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
-      canvas.width = Math.max(1, Math.floor(rect.width * dpr));
-      canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+      const pixelWidth = Math.max(1, Math.floor(rect.width * dpr));
+      const pixelHeight = Math.max(1, Math.floor(rect.height * dpr));
+      if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+        canvas.width = pixelWidth;
+        canvas.height = pixelHeight;
+        staticCanvas.width = pixelWidth;
+        staticCanvas.height = pixelHeight;
+        staticKey = '';
+      }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const tile = 32, cols = Math.ceil(rect.width / tile), rows = Math.ceil(rect.height / tile);
       const cameraX = Math.max(0, Math.min(59 - cols, position.current.x - Math.floor(cols / 2)));
       const cameraY = Math.max(0, Math.min(39 - rows, position.current.y - Math.floor(rows / 2)));
-      ctx.clearRect(0, 0, rect.width, rect.height);
-      for (let y=0;y<rows;y++) for (let x=0;x<cols;x++) {
-        const worldX = x + cameraX, worldY = y + cameraY;
-        const terrain = getTile(worldX, worldY);
-        const biome = Math.floor((worldX + worldY) / 12) % 4;
-        ctx.fillStyle = terrain.kind === 'water' ? '#102f4a' : terrain.kind === 'rock' ? '#30364a' : terrain.kind === 'wall' ? '#070b13' : biome === 0 ? '#101b30' : biome === 1 ? '#172536' : biome === 2 ? '#182d28' : '#241f32';
-        ctx.fillRect(x*tile,y*tile,tile,tile);
-        if (terrain.kind !== 'ground') {
-          ctx.strokeStyle = terrain.kind === 'wall' ? '#202b40' : '#53627b';
-          ctx.lineWidth = 1;
-          ctx.strokeRect(x*tile+1,y*tile+1,tile-2,tile-2);
+      const terrainKey = [rect.width, rect.height, cameraX, cameraY].join(':');
+      if (staticKey !== terrainKey) {
+        staticCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        staticCtx.clearRect(0, 0, rect.width, rect.height);
+        for (let y=0;y<rows;y++) for (let x=0;x<cols;x++) {
+          const worldX = x + cameraX, worldY = y + cameraY;
+          const terrain = getTile(worldX, worldY);
+          const biome = Math.floor((worldX + worldY) / 12) % 4;
+          staticCtx.fillStyle = terrain.kind === 'water' ? '#102f4a' : terrain.kind === 'rock' ? '#30364a' : terrain.kind === 'wall' ? '#070b13' : biome === 0 ? '#101b30' : biome === 1 ? '#172536' : biome === 2 ? '#182d28' : '#241f32';
+          staticCtx.fillRect(x*tile,y*tile,tile,tile);
+          if (terrain.kind !== 'ground') {
+            staticCtx.strokeStyle = terrain.kind === 'wall' ? '#202b40' : '#53627b';
+            staticCtx.lineWidth = 1;
+            staticCtx.strokeRect(x*tile+1,y*tile+1,tile-2,tile-2);
+          }
         }
+        staticKey = terrainKey;
       }
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      ctx.drawImage(staticCanvas, 0, 0, rect.width, rect.height);
       const zone=getZone(zoneId);
       const environment=getZoneEnvironment(zone,worldThreat,worldResources,explorationCount);
       const npcs=getZoneNpcs(zone,worldThreat,worldResources,explorationCount);
@@ -97,8 +115,7 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
       ctx.strokeStyle='#3b5684'; ctx.lineWidth=2; ctx.strokeRect(12,12,rect.width-24,rect.height-24);
       ctx.fillStyle='#dce7ff'; ctx.font='600 14px Inter,sans-serif'; ctx.fillText(zone.name,24,38);
       const mapPoi = zone.pointsOfInterest.map((name,index)=>({
-        name,
-        x: Math.floor((index + 1) * 60 / (zone.pointsOfInterest.length + 1)),
+        name,        x: Math.floor((index + 1) * 60 / (zone.pointsOfInterest.length + 1)),
         y: 5 + index * 8
       }));
       mapPoi.forEach((poi)=>{
@@ -217,8 +234,7 @@ function App() {
   const zoneModifiers = getZoneDynamicModifiers(currentZone, player.worldThreat, player.worldResources, player.factionStates.find(f=>f.faction===player.faction)?.influence??100);
   const environmentLabels = { dawn: 'Aube', day: 'Jour', dusk: 'Crépuscule', night: 'Nuit' } as const;
   const weatherLabels = { clear: 'Clair', mist: 'Brume', storm: 'Tempête', frost: 'Gel' } as const;
-  const equipped = getEquippedCard(player);
-  const nearestPoi = getNearestPoi(currentZone, worldTile);
+  const equipped = getEquippedCard(player);  const nearestPoi = getNearestPoi(currentZone, worldTile);
   const getNpcMemory = (npcId:string) => player.npcMemories.find(memory => memory.npcId === npcId);
   const nearestNpc = zoneNpcs.reduce((nearest,npc)=>{const distance=Math.abs(npc.x-worldTile.x)+Math.abs(npc.y-worldTile.y);return distance<nearest.distance?{npc,distance}:nearest;},{npc:zoneNpcs[0],distance:Number.POSITIVE_INFINITY});
   const playerRef = useRef(player);
@@ -317,8 +333,7 @@ function App() {
         setScenario(generateScenario(currentZone, next.level, next.explorationCount));
         setWorldEvent(generateWorldEvent(currentZone, next.worldThreat, next.worldResources, next.explorationCount));
       }
-      setWaypoint(null);
-      setSelectedSignal(null);
+      setWaypoint(null);      setSelectedSignal(null);
       return;
     }
     const timer = window.setTimeout(() => {
