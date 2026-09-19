@@ -64,8 +64,11 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
     if (!ctx) return;
     const staticCanvas = document.createElement('canvas');
     const staticCtx = staticCanvas.getContext('2d');
-    if (!staticCtx) return;
+    const sceneCanvas = document.createElement('canvas');
+    const sceneCtx = sceneCanvas.getContext('2d');
+    if (!staticCtx || !sceneCtx) return;
     let staticKey = '';
+    let sceneKey = '';
     const draw = (deltaMs = 16.67) => {
       const rect = canvas.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
@@ -76,7 +79,10 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
         canvas.height = pixelHeight;
         staticCanvas.width = pixelWidth;
         staticCanvas.height = pixelHeight;
+        sceneCanvas.width = pixelWidth;
+        sceneCanvas.height = pixelHeight;
         staticKey = '';
+        sceneKey = '';
       }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const tile = 32, cols = Math.ceil(rect.width / tile), rows = Math.ceil(rect.height / tile);
@@ -100,77 +106,40 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
         }
         staticKey = terrainKey;
       }
-      ctx.clearRect(0, 0, rect.width, rect.height);
-      ctx.drawImage(staticCanvas, 0, 0, rect.width, rect.height);
       const zone=getZone(zoneId);
-      const environment=getZoneEnvironment(zone,worldThreat,worldResources,explorationCount);
-      const npcs=getZoneNpcs(zone,worldThreat,worldResources,explorationCount);
-      const cycleAlpha={dawn:.10,day:0,dusk:.13,night:.24}[environment.cycle];
-      if(cycleAlpha){ctx.fillStyle=`rgba(12,20,48,${cycleAlpha})`;ctx.fillRect(0,0,rect.width,rect.height);}
-      if(environment.weather==='mist'){ctx.fillStyle='rgba(190,210,225,.07)';ctx.fillRect(0,0,rect.width,rect.height);}
-      if(environment.weather==='storm'){ctx.fillStyle=`rgba(80,90,130,${Math.min(.16,.05+environment.atmosphere*.02)})`;ctx.fillRect(0,0,rect.width,rect.height);}
-      if(environment.weather==='frost'){ctx.fillStyle='rgba(180,215,255,.08)';ctx.fillRect(0,0,rect.width,rect.height);}
-      if(worldThreat>=4){ctx.fillStyle=`rgba(150,30,40,${Math.min(.18,(worldThreat-3)*.03)})`;ctx.fillRect(0,0,rect.width,rect.height);}
-      const particles=Math.min(18,environment.atmosphere*3+(environment.weather==='storm'?6:0));
-      ctx.fillStyle='rgba(220,235,255,.42)';
-      for(let i=0;i<particles;i++){const x=((i*47+explorationCount*13)%Math.max(1,rect.width));const y=((i*83+worldThreat*17)%Math.max(1,rect.height));ctx.fillRect(x,y,2,2);}
-      ctx.strokeStyle='#3b5684'; ctx.lineWidth=2; ctx.strokeRect(12,12,rect.width-24,rect.height-24);
-      ctx.fillStyle='#dce7ff'; ctx.font='600 14px Inter,sans-serif'; ctx.fillText(zone.name,24,38);
-      const mapPoi = zone.pointsOfInterest.map((name,index)=>({
-        name,        x: Math.floor((index + 1) * 60 / (zone.pointsOfInterest.length + 1)),
-        y: 5 + index * 8
-      }));
-      mapPoi.forEach((poi)=>{
-        const sx=(poi.x-cameraX)*tile+tile/2, sy=(poi.y-cameraY)*tile+tile/2;
-        if(sx<0||sy<0||sx>rect.width||sy>rect.height)return;
-        ctx.fillStyle='#d8b56a'; ctx.beginPath(); ctx.arc(sx,sy,6,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle='#ead9ad'; ctx.font='10px Inter,sans-serif'; ctx.fillText(poi.name,sx+9,sy+3);
-      });
-      const eventPoint = getWorldEventPoint(worldEvent);
-      const eventDistance = Math.abs(position.current.x - eventPoint.x) + Math.abs(position.current.y - eventPoint.y);
-      const eventProgress = getWorldEventProgress(worldEvent, worldEventAge);
-      const eventPhase = getWorldEventPhase(worldEvent, worldEventAge).toUpperCase();
-      const eventRadius = eventPhase === 'EXPIRING' ? 30 : eventPhase === 'URGENT' ? 26 : 22;
-      if (eventDistance <= 8) {
-        ctx.strokeStyle=eventPhase==='EXPIRING'?'rgba(240,100,100,.8)':eventPhase==='URGENT'?'rgba(240,180,100,.7)':'rgba(120,190,230,.6)';
-        ctx.lineWidth=eventPhase==='EXPIRING'?3:2; ctx.setLineDash([5,5]);
-        const ex=(eventPoint.x-cameraX)*tile+tile/2, ey=(eventPoint.y-cameraY)*tile+tile/2;
-        if(ex>=0&&ey>=0&&ex<=rect.width&&ey<=rect.height){ctx.beginPath();ctx.arc(ex,ey,eventRadius,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#f0b0a0';ctx.font='600 9px Inter,sans-serif';ctx.fillText(eventPhase+' · EVENT',ex-30,ey-30);}
-        ctx.setLineDash([]);
+      const sceneCacheKey = [terrainKey, zoneId, worldThreat, worldResources, explorationCount, factionInfluence, worldEvent.title, worldEventAge, waypoint?.x ?? '', waypoint?.y ?? ''].join(':');
+      if (sceneKey !== sceneCacheKey) {
+        sceneCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        sceneCtx.clearRect(0, 0, rect.width, rect.height);
+        sceneCtx.drawImage(staticCanvas, 0, 0, rect.width, rect.height);
+        const environment=getZoneEnvironment(zone,worldThreat,worldResources,explorationCount);
+        const npcs=getZoneNpcs(zone,worldThreat,worldResources,explorationCount);
+        const cycleAlpha={dawn:.10,day:0,dusk:.13,night:.24}[environment.cycle];
+        if(cycleAlpha){sceneCtx.fillStyle='rgba(12,20,48,'+cycleAlpha+')';sceneCtx.fillRect(0,0,rect.width,rect.height);}
+        if(environment.weather==='mist'){sceneCtx.fillStyle='rgba(190,210,225,.07)';sceneCtx.fillRect(0,0,rect.width,rect.height);}
+        if(environment.weather==='storm'){sceneCtx.fillStyle='rgba(80,90,130,'+Math.min(.16,.05+environment.atmosphere*.02)+')';sceneCtx.fillRect(0,0,rect.width,rect.height);}
+        if(environment.weather==='frost'){sceneCtx.fillStyle='rgba(180,215,255,.08)';sceneCtx.fillRect(0,0,rect.width,rect.height);}
+        if(worldThreat>=4){sceneCtx.fillStyle='rgba(150,30,40,'+Math.min(.18,(worldThreat-3)*.03)+')';sceneCtx.fillRect(0,0,rect.width,rect.height);}
+        sceneCtx.strokeStyle='#3b5684';sceneCtx.lineWidth=2;sceneCtx.strokeRect(12,12,rect.width-24,rect.height-24);
+        sceneCtx.fillStyle='#dce7ff';sceneCtx.font='600 14px Inter,sans-serif';sceneCtx.fillText(zone.name,24,38);
+        const mapPoi=zone.pointsOfInterest.map((name,index)=>({name,x:Math.floor((index+1)*60/(zone.pointsOfInterest.length+1)),y:5+index*8}));
+        mapPoi.forEach((poi)=>{const sx=(poi.x-cameraX)*tile+tile/2,sy=(poi.y-cameraY)*tile+tile/2;if(sx<0||sy<0||sx>rect.width||sy>rect.height)return;sceneCtx.fillStyle='#d8b56a';sceneCtx.beginPath();sceneCtx.arc(sx,sy,6,0,Math.PI*2);sceneCtx.fill();sceneCtx.fillStyle='#ead9ad';sceneCtx.font='10px Inter,sans-serif';sceneCtx.fillText(poi.name,sx+9,sy+3);});
+        zone.pointsOfInterest.forEach((name,index)=>{const x=24+((index+1)*(rect.width-48))/(zone.pointsOfInterest.length+1),y=rect.height*(index%2===0?.42:.68);sceneCtx.fillStyle='#9db4e8';sceneCtx.beginPath();sceneCtx.arc(x,y,7,0,Math.PI*2);sceneCtx.fill();sceneCtx.fillStyle='#c9d7f5';sceneCtx.font='11px Inter,sans-serif';sceneCtx.fillText(name,x+10,y+4);});
+        npcs.forEach((npc)=>{const sx=(npc.x-cameraX)*tile+tile/2,sy=(npc.y-cameraY)*tile+tile/2;if(sx<0||sy<0||sx>rect.width||sy>rect.height)return;sceneCtx.fillStyle=npc.faction==='Aegis'?'#8fa9e8':npc.faction==='Nomads'?'#d8b56a':'#ad8ee8';sceneCtx.beginPath();sceneCtx.arc(sx,sy,6,0,Math.PI*2);sceneCtx.fill();sceneCtx.fillStyle='#e5ebfa';sceneCtx.font='9px Inter,sans-serif';sceneCtx.fillText(npc.activity.toUpperCase(),sx+8,sy+3);});
+        const pressure=getZoneFactionPressure(zone,factionInfluence);
+        const pressureColor=pressure.status==='dominant'?'rgba(120,180,255,.75)':pressure.status==='contested'?'rgba(220,190,110,.75)':pressure.status==='weak'?'rgba(230,110,130,.8)':'rgba(160,180,210,.65)';
+        sceneCtx.strokeStyle=pressureColor;sceneCtx.lineWidth=2;sceneCtx.setLineDash([6,4]);sceneCtx.strokeRect(8,8,rect.width-16,rect.height-16);sceneCtx.setLineDash([]);
+        const eventPoint=getWorldEventPoint(worldEvent);
+        const eventDistance=Math.abs(position.current.x-eventPoint.x)+Math.abs(position.current.y-eventPoint.y);
+        const eventPhase=getWorldEventPhase(worldEvent,worldEventAge).toUpperCase();
+        const eventRadius=eventPhase==='EXPIRING'?30:eventPhase==='URGENT'?26:22;
+        if(eventDistance<=8){sceneCtx.strokeStyle=eventPhase==='EXPIRING'?'rgba(240,100,100,.8)':eventPhase==='URGENT'?'rgba(240,180,100,.7)':'rgba(120,190,230,.6)';sceneCtx.lineWidth=eventPhase==='EXPIRING'?3:2;sceneCtx.setLineDash([5,5]);const ex=(eventPoint.x-cameraX)*tile+tile/2,ey=(eventPoint.y-cameraY)*tile+tile/2;if(ex>=0&&ey>=0&&ex<=rect.width&&ey<=rect.height){sceneCtx.beginPath();sceneCtx.arc(ex,ey,eventRadius,0,Math.PI*2);sceneCtx.stroke();sceneCtx.setLineDash([]);sceneCtx.fillStyle='#f0b0a0';sceneCtx.font='600 9px Inter,sans-serif';sceneCtx.fillText(eventPhase+' · EVENT',ex-30,ey-30);}sceneCtx.setLineDash([]);}
+        const ex=(eventPoint.x-cameraX)*tile+tile/2,ey=(eventPoint.y-cameraY)*tile+tile/2;if(ex>=-10&&ey>=-10&&ex<=rect.width+10&&ey<=rect.height+10){sceneCtx.fillStyle=eventPhase==='EXPIRING'?'#ef7777':eventPhase==='URGENT'?'#e5b26d':'#8fbfda';sceneCtx.beginPath();sceneCtx.arc(ex,ey,5+Math.min(4,worldThreat/3)+(eventPhase==='EXPIRING'?3:0),0,Math.PI*2);sceneCtx.fill();}
+        if(waypoint){const wx=(waypoint.x-cameraX)*tile+tile/2,wy=(waypoint.y-cameraY)*tile+tile/2;if(wx>=0&&wy>=0&&wx<=rect.width&&wy<=rect.height){sceneCtx.strokeStyle='#d8b56a';sceneCtx.lineWidth=2;sceneCtx.beginPath();sceneCtx.arc(wx,wy,11,0,Math.PI*2);sceneCtx.stroke();sceneCtx.fillStyle='#ead9ad';sceneCtx.font='600 10px Inter,sans-serif';sceneCtx.fillText('WAYPOINT',wx-27,wy-15);}const path=findTilePath(position.current,waypoint);if(path.length>1){sceneCtx.strokeStyle='#d8b56a';sceneCtx.lineWidth=3;sceneCtx.setLineDash([4,4]);sceneCtx.beginPath();path.forEach((p,i)=>{const sx=(p.x-cameraX)*tile+tile/2,sy=(p.y-cameraY)*tile+tile/2;if(i===0)sceneCtx.moveTo(sx,sy);else sceneCtx.lineTo(sx,sy);});sceneCtx.stroke();sceneCtx.setLineDash([]);}}
+        sceneKey=sceneCacheKey;
       }
-      ctx.fillStyle=eventPhase==='EXPIRING'?'#ef7777':eventPhase==='URGENT'?'#e5b26d':'#8fbfda'; ctx.beginPath();
-      const ex=(eventPoint.x-cameraX)*tile+tile/2, ey=(eventPoint.y-cameraY)*tile+tile/2;
-      if(ex>=-10&&ey>=-10&&ex<=rect.width+10&&ey<=rect.height+10){ctx.arc(ex,ey,5+Math.min(4,worldThreat/3)+(eventPhase==='EXPIRING'?3:0),0,Math.PI*2);ctx.fill();}
-      const path = waypoint ? findTilePath(position.current, waypoint) : [];
-      if (path.length > 1) {
-        ctx.strokeStyle = '#d8b56a';
-        ctx.lineWidth = 3;
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        path.forEach((p, i) => {
-          const sx=(p.x-cameraX)*tile+tile/2, sy=(p.y-cameraY)*tile+tile/2;
-          if (i===0) ctx.moveTo(sx,sy); else ctx.lineTo(sx,sy);
-        });
-        ctx.stroke();
-        ctx.setLineDash([]);
-      }
-      if (waypoint) {
-        const wx=(waypoint.x-cameraX)*tile+tile/2, wy=(waypoint.y-cameraY)*tile+tile/2;
-        if(wx>=0&&wy>=0&&wx<=rect.width&&wy<=rect.height){
-          ctx.strokeStyle='#d8b56a'; ctx.lineWidth=2;
-          ctx.beginPath(); ctx.arc(wx,wy,11,0,Math.PI*2); ctx.stroke();
-          ctx.fillStyle='#ead9ad'; ctx.font='600 10px Inter,sans-serif'; ctx.fillText('WAYPOINT',wx-27,wy-15);
-        }
-      }
-      zone.pointsOfInterest.forEach((name,index)=>{
-        const x=24+((index+1)*(rect.width-48))/(zone.pointsOfInterest.length+1), y=rect.height*(index%2===0?.42:.68);
-        ctx.fillStyle='#9db4e8'; ctx.beginPath(); ctx.arc(x,y,7,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle='#c9d7f5'; ctx.font='11px Inter,sans-serif'; ctx.fillText(name,x+10,y+4);
-      });
-      npcs.forEach((npc)=>{const sx=(npc.x-cameraX)*tile+tile/2,sy=(npc.y-cameraY)*tile+tile/2;if(sx<0||sy<0||sx>rect.width||sy>rect.height)return;ctx.fillStyle=npc.faction==='Aegis'?'#8fa9e8':npc.faction==='Nomads'?'#d8b56a':'#ad8ee8';ctx.beginPath();ctx.arc(sx,sy,6,0,Math.PI*2);ctx.fill();ctx.fillStyle='#e5ebfa';ctx.font='9px Inter,sans-serif';ctx.fillText(npc.activity.toUpperCase(),sx+8,sy+3);if(npc.activity==='patrol'){ctx.strokeStyle='rgba(235,120,120,.7)';ctx.lineWidth=1;ctx.setLineDash([3,3]);ctx.beginPath();ctx.arc(sx,sy,12+environment.atmosphere*2,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);}});
-      const pressure = getZoneFactionPressure(zone, factionInfluence);
-      const pressureColor = pressure.status === 'dominant' ? 'rgba(120,180,255,.75)' : pressure.status === 'contested' ? 'rgba(220,190,110,.75)' : pressure.status === 'weak' ? 'rgba(230,110,130,.8)' : 'rgba(160,180,210,.65)';
-      ctx.strokeStyle=pressureColor;ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.strokeRect(8,8,rect.width-16,rect.height-16);ctx.setLineDash([]);
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      ctx.drawImage(sceneCanvas, 0, 0, rect.width, rect.height);
       const currentRemotePlayers = remotePlayersRef.current.filter(isFreshRemotePresence);
       const activeIds = new Set(currentRemotePlayers.map(remote => remote.playerId));
       Object.keys(remoteVisuals.current).forEach(id => { if (!activeIds.has(id)) delete remoteVisuals.current[id]; });
