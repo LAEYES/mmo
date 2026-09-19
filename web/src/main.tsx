@@ -190,7 +190,15 @@ function App() {
   const nearestPoi = getNearestPoi(currentZone, worldTile);
   const getNpcMemory = (npcId:string) => player.npcMemories.find(memory => memory.npcId === npcId);
   const nearestNpc = zoneNpcs.reduce((nearest,npc)=>{const distance=Math.abs(npc.x-worldTile.x)+Math.abs(npc.y-worldTile.y);return distance<nearest.distance?{npc,distance}:nearest;},{npc:zoneNpcs[0],distance:Number.POSITIVE_INFINITY});
-  const playerRef = useRef(player);\n  useEffect(() => { playerRef.current = player; }, [player]);\n  const update = (next: typeof player) => { setPlayer(next); playerRef.current = next; savePlayer(next); void syncPlayerRemote(next); };\n  const persistMovement = (tile: typeof worldTile) => {\n    const next = { ...playerRef.current, worldTile: tile };\n    playerRef.current = next;\n    setPlayer(next);\n    savePlayer(next);\n  };
+  const playerRef = useRef(player);
+  useEffect(() => { playerRef.current = player; }, [player]);
+  const update = (next: typeof player) => { setPlayer(next); playerRef.current = next; savePlayer(next); void syncPlayerRemote(next); };
+  const persistMovement = (tile: typeof worldTile) => {
+    const next = { ...playerRef.current, worldTile: tile };
+    playerRef.current = next;
+    setPlayer(next);
+    savePlayer(next);
+  };
   useEffect(() => {
     const timer = window.setInterval(() => {
       setWorldEventAge(age => {
