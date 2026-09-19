@@ -115,7 +115,7 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
         staticKey = terrainKey;
       }
       const zone=getZone(zoneId);
-      const sceneCacheKey = [terrainKey, zoneId, worldThreat, worldResources, explorationCount, factionInfluence, worldEvent.title, worldEventAge, waypoint?.x ?? '', waypoint?.y ?? ''].join(':');
+      const sceneCacheKey = [terrainKey, zoneId, worldThreat, worldResources, explorationCount, factionInfluence, worldEvent.title, worldEvent.effect, worldEvent.intensity, worldEvent.faction, waypoint?.x ?? '', waypoint?.y ?? ''].join(':');
       if (sceneKey !== sceneCacheKey) {
         sceneCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
         sceneCtx.clearRect(0, 0, rect.width, rect.height);
@@ -138,12 +138,12 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
         const pressureColor=pressure.status==='dominant'?'rgba(120,180,255,.75)':pressure.status==='contested'?'rgba(220,190,110,.75)':pressure.status==='weak'?'rgba(230,110,130,.8)':'rgba(160,180,210,.65)';
         sceneCtx.strokeStyle=pressureColor;sceneCtx.lineWidth=2;sceneCtx.setLineDash([6,4]);sceneCtx.strokeRect(8,8,rect.width-16,rect.height-16);sceneCtx.setLineDash([]);
         const eventPoint=getWorldEventPoint(worldEvent);
-        const eventDistance=Math.abs(position.current.x-eventPoint.x)+Math.abs(position.current.y-eventPoint.y);
-        const eventPhase=getWorldEventPhase(worldEvent,worldEventAge).toUpperCase();
-        const eventRadius=eventPhase==='EXPIRING'?30:eventPhase==='URGENT'?26:22;
-        if(eventDistance<=8){sceneCtx.strokeStyle=eventPhase==='EXPIRING'?'rgba(240,100,100,.8)':eventPhase==='URGENT'?'rgba(240,180,100,.7)':'rgba(120,190,230,.6)';sceneCtx.lineWidth=eventPhase==='EXPIRING'?3:2;sceneCtx.setLineDash([5,5]);const ex=(eventPoint.x-cameraX)*tile+tile/2,ey=(eventPoint.y-cameraY)*tile+tile/2;if(ex>=0&&ey>=0&&ex<=rect.width&&ey<=rect.height){sceneCtx.beginPath();sceneCtx.arc(ex,ey,eventRadius,0,Math.PI*2);sceneCtx.stroke();sceneCtx.setLineDash([]);sceneCtx.fillStyle='#f0b0a0';sceneCtx.font='600 9px Inter,sans-serif';sceneCtx.fillText(eventPhase+' · EVENT',ex-30,ey-30);}sceneCtx.setLineDash([]);}
-        const ex=(eventPoint.x-cameraX)*tile+tile/2,ey=(eventPoint.y-cameraY)*tile+tile/2;if(ex>=-10&&ey>=-10&&ex<=rect.width+10&&ey<=rect.height+10){sceneCtx.fillStyle=eventPhase==='EXPIRING'?'#ef7777':eventPhase==='URGENT'?'#e5b26d':'#8fbfda';sceneCtx.beginPath();sceneCtx.arc(ex,ey,5+Math.min(4,worldThreat/3)+(eventPhase==='EXPIRING'?3:0),0,Math.PI*2);sceneCtx.fill();}
-        if(waypoint){const wx=(waypoint.x-cameraX)*tile+tile/2,wy=(waypoint.y-cameraY)*tile+tile/2;if(wx>=0&&wy>=0&&wx<=rect.width&&wy<=rect.height){sceneCtx.strokeStyle='#d8b56a';sceneCtx.lineWidth=2;sceneCtx.beginPath();sceneCtx.arc(wx,wy,11,0,Math.PI*2);sceneCtx.stroke();sceneCtx.fillStyle='#ead9ad';sceneCtx.font='600 10px Inter,sans-serif';sceneCtx.fillText('WAYPOINT',wx-27,wy-15);}const pathKey=position.current.x+','+position.current.y+'>'+waypoint.x+','+waypoint.y;if(pathCache.current.key!==pathKey){pathCache.current={key:pathKey,path:findTilePath(position.current,waypoint)};}const path=pathCache.current.path;if(path.length>1){sceneCtx.strokeStyle='#d8b56a';sceneCtx.lineWidth=3;sceneCtx.setLineDash([4,4]);sceneCtx.beginPath();path.forEach((p,i)=>{const sx=(p.x-cameraX)*tile+tile/2,sy=(p.y-cameraY)*tile+tile/2;if(i===0)sceneCtx.moveTo(sx,sy);else sceneCtx.lineTo(sx,sy);});sceneCtx.stroke();sceneCtx.setLineDash([]);}}
+        if(waypoint){
+          const pathKey=position.current.x+','+position.current.y+'>'+waypoint.x+','+waypoint.y;
+          if(pathCache.current.key!==pathKey){pathCache.current={key:pathKey,path:findTilePath(position.current,waypoint)};}
+          const path=pathCache.current.path;
+          if(path.length>1){sceneCtx.strokeStyle='#d8b56a';sceneCtx.lineWidth=3;sceneCtx.setLineDash([4,4]);sceneCtx.beginPath();path.forEach((p,i)=>{const sx=(p.x-cameraX)*tile+tile/2,sy=(p.y-cameraY)*tile+tile/2;if(i===0)sceneCtx.moveTo(sx,sy);else sceneCtx.lineTo(sx,sy);});sceneCtx.stroke();sceneCtx.setLineDash([]);}
+        }
         sceneKey=sceneCacheKey;
       }
       ctx.clearRect(0, 0, rect.width, rect.height);
@@ -151,6 +151,26 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
       dynamicCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
       dynamicCtx.clearRect(0, 0, rect.width, rect.height);
       const currentRemotePlayers = remotePlayersRef.current.filter(isFreshRemotePresence);
+      const eventPhase=getWorldEventPhase(worldEvent,worldEventAge).toUpperCase();
+      const eventPoint=getWorldEventPoint(worldEvent);
+      const ex=(eventPoint.x-cameraX)*tile+tile/2,ey=(eventPoint.y-cameraY)*tile+tile/2;
+      if(ex>=-40&&ey>=-40&&ex<=rect.width+40&&ey<=rect.height+40){
+        const pulse=0.5+0.5*Math.sin(fxTime.current/320);
+        const eventColor=eventPhase==='EXPIRING'?'#ef7777':eventPhase==='URGENT'?'#e5b26d':'#8fbfda';
+        dynamicCtx.save();dynamicCtx.globalAlpha=0.18+pulse*0.16;dynamicCtx.strokeStyle=eventColor;dynamicCtx.lineWidth=2;
+        dynamicCtx.beginPath();dynamicCtx.arc(ex,ey,9+pulse*8,0,Math.PI*2);dynamicCtx.stroke();
+        dynamicCtx.globalAlpha=0.9;dynamicCtx.fillStyle=eventColor;dynamicCtx.beginPath();dynamicCtx.arc(ex,ey,4+pulse*2,0,Math.PI*2);dynamicCtx.fill();
+        dynamicCtx.globalAlpha=0.95;dynamicCtx.fillStyle='#f0d9d0';dynamicCtx.font='600 9px Inter,sans-serif';dynamicCtx.fillText(eventPhase+' · EVENT',ex-30,ey-14);dynamicCtx.restore();
+      }
+      if(waypoint){
+        const wx=(waypoint.x-cameraX)*tile+tile/2,wy=(waypoint.y-cameraY)*tile+tile/2;
+        if(wx>=-30&&wy>=-30&&wx<=rect.width+30&&wy<=rect.height+30){
+          const pulse=0.5+0.5*Math.sin(fxTime.current/220);
+          dynamicCtx.save();dynamicCtx.globalAlpha=0.28+pulse*0.18;dynamicCtx.strokeStyle='#d8b56a';dynamicCtx.lineWidth=2;
+          dynamicCtx.beginPath();dynamicCtx.arc(wx,wy,10+pulse*5,0,Math.PI*2);dynamicCtx.stroke();
+          dynamicCtx.globalAlpha=0.9;dynamicCtx.fillStyle='#ead9ad';dynamicCtx.font='600 10px Inter,sans-serif';dynamicCtx.fillText('WAYPOINT',wx-27,wy-15);dynamicCtx.restore();
+        }
+      }
       const activeIds = new Set(currentRemotePlayers.map(remote => remote.playerId));
       Object.keys(remoteVisuals.current).forEach(id => { if (!activeIds.has(id)) delete remoteVisuals.current[id]; });
       const smoothing = 1 - Math.exp(-10 * Math.min(50, Math.max(0, deltaMs)) / 1000);
