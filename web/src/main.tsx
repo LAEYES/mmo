@@ -10,7 +10,8 @@ import { equipCard, factions, fuseCards, getCardFusionCost, getEquippedCard, gra
 function isFreshRemotePresence(entry: ZonePresence) { return Date.now() - entry.updatedAt <= 15000; }
 
 function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources, explorationCount, factionInfluence, worldEvent, worldEventAge, remotePlayers, onTileMove, onSignalSelect }: { zoneId: string; waypoint: {x:number;y:number}|null; worldTile: {x:number;y:number}; worldThreat: number; worldResources: number; explorationCount: number; factionInfluence: number; worldEvent: import('./world').WorldEvent; worldEventAge: number; remotePlayers: ZonePresence[]; onTileMove: (tileX: number, tileY: number) => void; onSignalSelect: (signal: {type:'poi'|'npc'|'event'; name:string; x:number; y:number}) => void }) {
-  const ref = useRef<HTMLCanvasElement>(null);
+  const baseRef = useRef<HTMLCanvasElement>(null);
+  const dynamicRef = useRef<HTMLCanvasElement>(null);
   const position = useRef({ x: 0, y: 0 });
   const remoteVisuals = useRef<Record<string, { x: number; y: number }>>({});
   const remotePlayersRef = useRef(remotePlayers);
@@ -23,7 +24,7 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
     position.current = { x: worldTile.x, y: worldTile.y };
   }, [worldTile.x, worldTile.y]);
   useEffect(() => {
-    const canvas = ref.current;
+    const canvas = baseRef.current;
     if (!canvas) return;
     const onPointer = (event: PointerEvent) => {
       const rect = canvas.getBoundingClientRect();
@@ -59,10 +60,12 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
     return () => canvas.removeEventListener('pointerdown', onPointer);
   }, [onTileMove, onSignalSelect, zoneId, worldThreat, worldResources, explorationCount, worldEvent]);
   useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas) return;
+    const canvas = baseRef.current;
+    const dynamicCanvas = dynamicRef.current;
+    if (!canvas || !dynamicCanvas) return;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const dynamicCtx = dynamicCanvas.getContext('2d');
+    if (!ctx || !dynamicCtx) return;
     const staticCanvas = document.createElement('canvas');
     const staticCtx = staticCanvas.getContext('2d');
     const sceneCanvas = document.createElement('canvas');
@@ -78,6 +81,8 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
       if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
         canvas.width = pixelWidth;
         canvas.height = pixelHeight;
+        dynamicCanvas.width = pixelWidth;
+        dynamicCanvas.height = pixelHeight;
         staticCanvas.width = pixelWidth;
         staticCanvas.height = pixelHeight;
         sceneCanvas.width = pixelWidth;
@@ -141,6 +146,8 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
       }
       ctx.clearRect(0, 0, rect.width, rect.height);
       ctx.drawImage(sceneCanvas, 0, 0, rect.width, rect.height);
+      dynamicCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      dynamicCtx.clearRect(0, 0, rect.width, rect.height);
       const currentRemotePlayers = remotePlayersRef.current.filter(isFreshRemotePresence);
       const activeIds = new Set(currentRemotePlayers.map(remote => remote.playerId));
       Object.keys(remoteVisuals.current).forEach(id => { if (!activeIds.has(id)) delete remoteVisuals.current[id]; });
@@ -152,13 +159,13 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
         const sx=(visual.x-cameraX)*tile+tile/2,sy=(visual.y-cameraY)*tile+tile/2;
         if(sx<-20||sy<-20||sx>rect.width+20||sy>rect.height+20)return;
         const remoteFactionColor = remote.faction === 'Aegis' ? '#8fa9e8' : remote.faction === 'Nomads' ? '#d8b56a' : remote.faction === 'Syndicate' ? '#ad8ee8' : '#8fbfda';
-        ctx.fillStyle=remoteFactionColor;ctx.beginPath();ctx.arc(sx,sy,7,0,Math.PI*2);ctx.fill();
-        ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=1;ctx.stroke();
-        ctx.fillStyle='#dce7ff';ctx.font='600 9px Inter,sans-serif';ctx.fillText(remote.name+' · '+remote.faction,sx+9,sy+3);
+        dynamicCtx.fillStyle=remoteFactionColor;dynamicCtx.beginPath();dynamicCtx.arc(sx,sy,7,0,Math.PI*2);dynamicCtx.fill();
+        dynamicCtx.strokeStyle='rgba(255,255,255,.5)';dynamicCtx.lineWidth=1;dynamicCtx.stroke();
+        dynamicCtx.fillStyle='#dce7ff';dynamicCtx.font='600 9px Inter,sans-serif';dynamicCtx.fillText(remote.name+' · '+remote.faction,sx+9,sy+3);
       });
       const px=(position.current.x-cameraX)*tile+tile/2, py=(position.current.y-cameraY)*tile+tile/2;
-      ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(px,py,9,0,Math.PI*2); ctx.fill();
-      ctx.strokeStyle='#9db4e8'; ctx.stroke(); ctx.fillStyle='#c9d7f5'; ctx.font='600 11px Inter,sans-serif'; ctx.fillText('PLAYER',px-22,py+24);
+      dynamicCtx.fillStyle='#fff'; dynamicCtx.beginPath(); dynamicCtx.arc(px,py,9,0,Math.PI*2); dynamicCtx.fill();
+      dynamicCtx.strokeStyle='#9db4e8'; dynamicCtx.stroke(); dynamicCtx.fillStyle='#c9d7f5'; dynamicCtx.font='600 11px Inter,sans-serif'; dynamicCtx.fillText('PLAYER',px-22,py+24);
     };
     let frame = 0;
     let lastFrame = performance.now();
@@ -173,7 +180,10 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
     window.addEventListener('resize', onResize);
     return()=>{ window.cancelAnimationFrame(frame); window.removeEventListener('resize',onResize); };
   },[zoneId,waypoint,worldTile.x,worldTile.y,worldThreat,worldResources,explorationCount,factionInfluence,worldEvent,worldEventAge]);
-  return <canvas ref={ref} className="tile-canvas" aria-label={`Tile map of ${getZone(zoneId).name}`} />;
+  return <div className="world-canvas-layer">
+    <canvas ref={baseRef} className="tile-canvas tile-canvas-base" aria-label={`Tile map of ${getZone(zoneId).name}`} />
+    <canvas ref={dynamicRef} className="tile-canvas tile-canvas-dynamic" aria-hidden="true" />
+  </div>;
 }
 
 function App() {
