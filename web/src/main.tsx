@@ -217,6 +217,18 @@ function App() {
     setPlayer(next);
     savePlayer(next);
   };
+  const upsertRemotePlayer = (entry: ZonePresence) => {
+    const id = presencePlayerIdRef.current;
+    if (!id || entry.playerId === id) return;
+    setRemotePlayers(current => {
+      const index = current.findIndex(player => player.playerId === entry.playerId);
+      if (index < 0) return [...current, entry];
+      const next = current.slice();
+      next[index] = entry;
+      return next;
+    });
+  };
+
   useEffect(() => {
     const existing = window.localStorage.getItem('freedomarena:presence:id');
     const id = existing ?? crypto.randomUUID();
@@ -225,7 +237,7 @@ function App() {
     let stopped = false;
     let stopPresence: (() => Promise<void>) | null = null;
     const join = async () => {
-      const result = await joinZonePresence(player.zoneId, { playerId: id, name: player.name, zoneId: player.zoneId, worldTile: player.worldTile, faction: player.faction, updatedAt: Date.now() }, { onSync: players => { if (!stopped) setRemotePlayers(players.filter(entry => entry.playerId !== id)); }, onLeave: playerId => setRemotePlayers(current => current.filter(entry => entry.playerId !== playerId)) });
+      const result = await joinZonePresence(player.zoneId, { playerId: id, name: player.name, zoneId: player.zoneId, worldTile: player.worldTile, faction: player.faction, updatedAt: Date.now() }, { onSync: players => { if (!stopped) setRemotePlayers(players.filter(entry => entry.playerId !== id)); }, onJoin: entry => { if (!stopped) upsertRemotePlayer(entry); }, onLeave: playerId => setRemotePlayers(current => current.filter(entry => entry.playerId !== playerId)) });
       if (stopped) { await result.stop(); return; }
       presenceChannelRef.current = result.channel;
       stopPresence = result.stop;
