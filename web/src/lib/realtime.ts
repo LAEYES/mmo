@@ -18,6 +18,12 @@ export type ZonePresenceCallbacks = {
   onUpdate?: (player: ZonePresence) => void;
 };
 
+function isZonePresence(value: unknown): value is ZonePresence {
+  if (!value || typeof value !== 'object') return false;
+  const item = value as Partial<ZonePresence>;
+  return typeof item.playerId === 'string' && typeof item.name === 'string' && typeof item.zoneId === 'string' && typeof item.faction === 'string' && typeof item.updatedAt === 'number' && Boolean(item.worldTile) && typeof item.worldTile?.x === 'number' && typeof item.worldTile?.y === 'number';
+}
+
 function topic(zoneId: string) {
   return 'freedomarena:zone:' + zoneId;
 }
@@ -35,16 +41,16 @@ export async function joinZonePresence(
 
   channel.on('presence', { event: 'sync' }, () => {
     const state = channel.presenceState<ZonePresence>();
-    const players = Object.values(state).flatMap(entries => entries as ZonePresence[]);
+    const players = Object.values(state).flatMap(entries => entries.filter(isZonePresence));
     callbacks.onSync?.(players);
   });
 
   channel.on('presence', { event: 'join' }, ({ newPresences }) => {
-    for (const entry of newPresences as ZonePresence[]) callbacks.onJoin?.(entry);
+    for (const entry of newPresences) if (isZonePresence(entry)) callbacks.onJoin?.(entry);
   });
 
   channel.on('presence', { event: 'leave' }, ({ leftPresences }) => {
-    for (const entry of leftPresences as ZonePresence[]) callbacks.onLeave?.(entry.playerId);
+    for (const entry of leftPresences) if (isZonePresence(entry)) callbacks.onLeave?.(entry.playerId);
   });
 
   await channel.subscribe(async status => {
@@ -55,7 +61,7 @@ export async function joinZonePresence(
     channel,
     stop: async () => {
       await channel.untrack();
-      await supabase.removeChannel(channel);
+      if (supabase) await supabase.removeChannel(channel);
     },
   };
 }
