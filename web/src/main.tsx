@@ -11,6 +11,8 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
   const ref = useRef<HTMLCanvasElement>(null);
   const position = useRef({ x: 0, y: 0 });
   const remoteVisuals = useRef<Record<string, { x: number; y: number }>>({});
+  const remotePlayersRef = useRef(remotePlayers);
+  useEffect(() => { remotePlayersRef.current = remotePlayers; }, [remotePlayers]);
   useEffect(() => {
     position.current = { x: 0, y: 0 };
   }, [zoneId]);
@@ -58,7 +60,7 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    const draw = () => {
+    const draw = (deltaMs = 16.67) => {
       const rect = canvas.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
       canvas.width = Math.max(1, Math.floor(rect.width * dpr));
@@ -150,12 +152,14 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
       const pressure = getZoneFactionPressure(zone, factionInfluence);
       const pressureColor = pressure.status === 'dominant' ? 'rgba(120,180,255,.75)' : pressure.status === 'contested' ? 'rgba(220,190,110,.75)' : pressure.status === 'weak' ? 'rgba(230,110,130,.8)' : 'rgba(160,180,210,.65)';
       ctx.strokeStyle=pressureColor;ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.strokeRect(8,8,rect.width-16,rect.height-16);ctx.setLineDash([]);
-      const activeIds = new Set(remotePlayers.map(remote => remote.playerId));
+      const currentRemotePlayers = remotePlayersRef.current;
+      const activeIds = new Set(currentRemotePlayers.map(remote => remote.playerId));
       Object.keys(remoteVisuals.current).forEach(id => { if (!activeIds.has(id)) delete remoteVisuals.current[id]; });
-      remotePlayers.forEach(remote=>{
+      const smoothing = 1 - Math.exp(-10 * Math.min(50, Math.max(0, deltaMs)) / 1000);
+      currentRemotePlayers.forEach(remote=>{
         const visual = remoteVisuals.current[remote.playerId] ?? (remoteVisuals.current[remote.playerId] = { x: remote.worldTile.x, y: remote.worldTile.y });
-        visual.x += (remote.worldTile.x - visual.x) * 0.22;
-        visual.y += (remote.worldTile.y - visual.y) * 0.22;
+        visual.x += (remote.worldTile.x - visual.x) * smoothing;
+        visual.y += (remote.worldTile.y - visual.y) * smoothing;
         const sx=(visual.x-cameraX)*tile+tile/2,sy=(visual.y-cameraY)*tile+tile/2;
         if(sx<-20||sy<-20||sx>rect.width+20||sy>rect.height+20)return;
         ctx.fillStyle='#8fbfda';ctx.beginPath();ctx.arc(sx,sy,7,0,Math.PI*2);ctx.fill();
@@ -166,11 +170,18 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
       ctx.strokeStyle='#9db4e8'; ctx.stroke(); ctx.fillStyle='#c9d7f5'; ctx.font='600 11px Inter,sans-serif'; ctx.fillText('PLAYER',px-22,py+24);
     };
     let frame = 0;
-    const animate = () => { draw(); frame = window.requestAnimationFrame(animate); };
-    animate();
-    window.addEventListener('resize',draw);
-    return()=>{ window.cancelAnimationFrame(frame); window.removeEventListener('resize',draw); };
-  },[zoneId,waypoint,worldTile.x,worldTile.y,worldThreat,worldResources,explorationCount,factionInfluence,worldEvent,worldEventAge,remotePlayers]);
+    let lastFrame = performance.now();
+    const animate = (now: number) => {
+      const deltaMs = Math.min(50, Math.max(0, now - lastFrame));
+      lastFrame = now;
+      draw(deltaMs);
+      frame = window.requestAnimationFrame(animate);
+    };
+    animate(lastFrame);
+    const onResize = () => draw(16.67);
+    window.addEventListener('resize', onResize);
+    return()=>{ window.cancelAnimationFrame(frame); window.removeEventListener('resize',onResize); };
+  },[zoneId,waypoint,worldTile.x,worldTile.y,worldThreat,worldResources,explorationCount,factionInfluence,worldEvent,worldEventAge]);
   return <canvas ref={ref} className="tile-canvas" aria-label={`Tile map of ${getZone(zoneId).name}`} />;
 }
 
