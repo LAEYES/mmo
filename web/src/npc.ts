@@ -27,7 +27,7 @@ export function resolveNpcAction(memory: NpcMemory, action: NpcAction, worldThre
   const trust = Math.max(-10, Math.min(20, memory.trust + delta));
   const affinity: NpcAffinity = trust >= 8 ? 'ally' : trust <= -3 ? 'rival' : 'neutral';
   const xp = action === 'patrol' ? 15 : action === 'trade' ? 12 : 8;
-  const resources = action === 'trade' && worldResources >= 1 ? 2 : action === 'dialogue' ? 1 : 0;
+  const resources = action === 'trade' && worldResources >= 1 ? 1 : action === 'dialogue' ? 1 : 0;
   const threatDelta = action === 'patrol' ? -1 : action === 'dialogue' && worldThreat >= 5 ? 1 : 0;
   return {
     memory: { ...memory, encounters, trust, affinity },
