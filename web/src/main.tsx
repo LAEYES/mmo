@@ -187,7 +187,19 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
           const pulse=0.5+0.5*Math.sin(fxTime.current/220);
           dynamicCtx.save();dynamicCtx.globalAlpha=0.28+pulse*0.18;dynamicCtx.strokeStyle='#d8b56a';dynamicCtx.lineWidth=2;
           dynamicCtx.beginPath();dynamicCtx.arc(wx,wy,10+pulse*5,0,Math.PI*2);dynamicCtx.stroke();
-          const trailPhase = fxTime.current / 260;\n          dynamicCtx.save();\n          for(let i=0;i<4;i++){\n            const trailT=(trailPhase*0.55+i/4)%1;\n            const trailAlpha=(1-trailT)*0.24;\n            dynamicCtx.globalAlpha=trailAlpha;\n            dynamicCtx.fillStyle='#ead9ad';\n            dynamicCtx.beginPath();\n            dynamicCtx.arc(wx,wy+18+trailT*26,2.5-trailT*1.2,0,Math.PI*2);\n            dynamicCtx.fill();\n          }\n          dynamicCtx.globalAlpha=0.9;dynamicCtx.fillStyle='#ead9ad';dynamicCtx.font='600 10px Inter,sans-serif';dynamicCtx.fillText('WAYPOINT',wx-27,wy-15);\n          dynamicCtx.restore();
+          const trailPhase = fxTime.current / 260;
+          dynamicCtx.save();
+          for(let i=0;i<4;i++){
+            const trailT=(trailPhase*0.55+i/4)%1;
+            const trailAlpha=(1-trailT)*0.24;
+            dynamicCtx.globalAlpha=trailAlpha;
+            dynamicCtx.fillStyle='#ead9ad';
+            dynamicCtx.beginPath();
+            dynamicCtx.arc(wx,wy+18+trailT*26,2.5-trailT*1.2,0,Math.PI*2);
+            dynamicCtx.fill();
+          }
+          dynamicCtx.globalAlpha=0.9;dynamicCtx.fillStyle='#ead9ad';dynamicCtx.font='600 10px Inter,sans-serif';dynamicCtx.fillText('WAYPOINT',wx-27,wy-15);
+          dynamicCtx.restore();
         }
       }
       const activeIds = new Set(currentRemotePlayers.map(remote => remote.playerId));
