@@ -212,7 +212,7 @@ function App() {
     let stopped = false;
     let stopPresence: (() => Promise<void>) | null = null;
     const join = async () => {
-      const result = await joinZonePresence(player.zoneId, { playerId: id, name: player.name, zoneId: player.zoneId, worldTile: player.worldTile, faction: player.faction, updatedAt: Date.now() }, { onSync: players => { if (!stopped) setRemotePlayers(players); }, onLeave: playerId => setRemotePlayers(current => current.filter(entry => entry.playerId !== playerId)) });
+      const result = await joinZonePresence(player.zoneId, { playerId: id, name: player.name, zoneId: player.zoneId, worldTile: player.worldTile, faction: player.faction, updatedAt: Date.now() }, { onSync: players => { if (!stopped) setRemotePlayers(players.filter(entry => entry.playerId !== id)); }, onLeave: playerId => setRemotePlayers(current => current.filter(entry => entry.playerId !== playerId)) });
       if (stopped) { await result.stop(); return; }
       presenceChannelRef.current = result.channel;
       stopPresence = result.stop;
