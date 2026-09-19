@@ -162,8 +162,10 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
         visual.y += (remote.worldTile.y - visual.y) * smoothing;
         const sx=(visual.x-cameraX)*tile+tile/2,sy=(visual.y-cameraY)*tile+tile/2;
         if(sx<-20||sy<-20||sx>rect.width+20||sy>rect.height+20)return;
-        ctx.fillStyle='#8fbfda';ctx.beginPath();ctx.arc(sx,sy,7,0,Math.PI*2);ctx.fill();
-        ctx.fillStyle='#dce7ff';ctx.font='600 9px Inter,sans-serif';ctx.fillText(remote.name,sx+9,sy+3);
+        const remoteFactionColor = remote.faction === 'Aegis' ? '#8fa9e8' : remote.faction === 'Nomads' ? '#d8b56a' : remote.faction === 'Syndicate' ? '#ad8ee8' : '#8fbfda';
+        ctx.fillStyle=remoteFactionColor;ctx.beginPath();ctx.arc(sx,sy,7,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=1;ctx.stroke();
+        ctx.fillStyle='#dce7ff';ctx.font='600 9px Inter,sans-serif';ctx.fillText(remote.name+' · '+remote.faction,sx+9,sy+3);
       });
       const px=(position.current.x-cameraX)*tile+tile/2, py=(position.current.y-cameraY)*tile+tile/2;
       ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(px,py,9,0,Math.PI*2); ctx.fill();
