@@ -13,6 +13,9 @@ function WorldCanvas({ zoneId, waypoint, worldThreat, worldResources, exploratio
     position.current = { x: 0, y: 0 };
   }, [zoneId]);
   useEffect(() => {
+    position.current = { x: worldTile.x, y: worldTile.y };
+  }, [worldTile.x, worldTile.y]);
+  useEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
     const onPointer = (event: PointerEvent) => {
@@ -43,7 +46,6 @@ function WorldCanvas({ zoneId, waypoint, worldThreat, worldResources, exploratio
       }
       const tileX = Math.floor(clickX / tile) + cameraX;
       const tileY = Math.floor(clickY / tile) + cameraY;
-      position.current = { x: tileX, y: tileY };
       onTileMove(tileX, tileY);
     };
     canvas.addEventListener('pointerdown', onPointer);
@@ -153,7 +155,7 @@ function WorldCanvas({ zoneId, waypoint, worldThreat, worldResources, exploratio
     draw();
     window.addEventListener('resize',draw);
     return()=>window.removeEventListener('resize',draw);
-  },[zoneId,waypoint,worldThreat,worldResources,explorationCount,factionInfluence]);
+  },[zoneId,waypoint,worldThreat,worldResources,explorationCount,factionInfluence,worldEvent,worldEventAge]);
   return <canvas ref={ref} className="tile-canvas" aria-label={`Tile map of ${getZone(zoneId).name}`} />;
 }
 
@@ -189,6 +191,18 @@ function App() {
   const getNpcMemory = (npcId:string) => player.npcMemories.find(memory => memory.npcId === npcId);
   const nearestNpc = zoneNpcs.reduce((nearest,npc)=>{const distance=Math.abs(npc.x-worldTile.x)+Math.abs(npc.y-worldTile.y);return distance<nearest.distance?{npc,distance}:nearest;},{npc:zoneNpcs[0],distance:Number.POSITIVE_INFINITY});
   const update = (next: typeof player) => { setPlayer(next); savePlayer(next); void syncPlayerRemote(next); };
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setWorldEventAge(age => {
+        if (age + 1 < worldEvent.duration) return age + 1;
+        const nextEvent = generateWorldEvent(currentZone, player.worldThreat, player.worldResources, player.explorationCount, localFaction?.influence ?? 100);
+        setWorldEvent(nextEvent);
+        return 0;
+      });
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [currentZone, player.worldThreat, player.worldResources, player.explorationCount, localFaction?.influence, worldEvent.duration]);
+
   useEffect(() => {
     if (!autoMove || !waypoint) return;
     const path = findTilePath(worldTile, waypoint);
