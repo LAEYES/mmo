@@ -155,7 +155,7 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
     draw();
     window.addEventListener('resize',draw);
     return()=>window.removeEventListener('resize',draw);
-  },[zoneId,waypoint,worldThreat,worldResources,explorationCount,factionInfluence,worldEvent,worldEventAge]);
+  },[zoneId,waypoint,worldTile.x,worldTile.y,worldThreat,worldResources,explorationCount,factionInfluence,worldEvent,worldEventAge]);
   return <canvas ref={ref} className="tile-canvas" aria-label={`Tile map of ${getZone(zoneId).name}`} />;
 }
 
