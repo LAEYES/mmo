@@ -181,10 +181,30 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
         const sx=(visual.x-cameraX)*tile+tile/2,sy=(visual.y-cameraY)*tile+tile/2;
         if(sx<-20||sy<-20||sx>rect.width+20||sy>rect.height+20)return;
         const remoteFactionColor = remote.faction === 'Aegis' ? '#8fa9e8' : remote.faction === 'Nomads' ? '#d8b56a' : remote.faction === 'Syndicate' ? '#ad8ee8' : '#8fbfda';
+        const remotePulse = 0.5 + 0.5 * Math.sin(fxTime.current / 360 + remote.playerId.length);
+        dynamicCtx.save();
+        dynamicCtx.globalAlpha = 0.12 + remotePulse * 0.10;
+        dynamicCtx.strokeStyle = remoteFactionColor;
+        dynamicCtx.lineWidth = 1.5;
+        dynamicCtx.beginPath();
+        dynamicCtx.arc(sx, sy, 10 + remotePulse * 4, 0, Math.PI * 2);
+        dynamicCtx.stroke();
+        dynamicCtx.globalAlpha = 1;
         dynamicCtx.fillStyle=remoteFactionColor;dynamicCtx.beginPath();dynamicCtx.arc(sx,sy,7,0,Math.PI*2);dynamicCtx.fill();
+        dynamicCtx.restore();
         dynamicCtx.strokeStyle='rgba(255,255,255,.5)';dynamicCtx.lineWidth=1;dynamicCtx.stroke();
         dynamicCtx.fillStyle='#dce7ff';dynamicCtx.font='600 9px Inter,sans-serif';dynamicCtx.fillText(remote.name+' · '+remote.faction,sx+9,sy+3);
       });
+      const ambientPhase = fxTime.current / 1800;
+      for(let i=0;i<10;i++){
+        const ax=((i*83 + Math.floor(ambientPhase*12)*17)%(rect.width+80))-40;
+        const ay=((i*47 + Math.floor(ambientPhase*8)*29)%(rect.height+80))-40;
+        const shimmer=0.16+0.10*Math.sin(ambientPhase*2+i);
+        dynamicCtx.globalAlpha=Math.max(0,shimmer);
+        dynamicCtx.fillStyle='#b8c9e8';
+        dynamicCtx.fillRect(ax,ay,1.5,1.5);
+      }
+      dynamicCtx.globalAlpha=1;
       const px=(position.current.x-cameraX)*tile+tile/2, py=(position.current.y-cameraY)*tile+tile/2;
       const pulse = 0.5 + 0.5 * Math.sin(fxTime.current / 260);
       dynamicCtx.save();
