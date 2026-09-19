@@ -199,19 +199,19 @@ function App() {
     setPlayer(next);
     savePlayer(next);
   };
+  const worldEventFactionInfluence = player.factionStates.find(f => f.faction === currentZone.faction)?.influence ?? 100;
   useEffect(() => {
     const timer = window.setInterval(() => {
       setWorldEventAge(age => {
         if (age + 1 < worldEvent.duration) return age + 1;
         const zone = getZone(player.zoneId);
-        const influence = player.factionStates.find(f => f.faction === zone.faction)?.influence ?? 100;
-        const nextEvent = generateWorldEvent(zone, player.worldThreat, player.worldResources, player.explorationCount, influence);
+        const nextEvent = generateWorldEvent(zone, player.worldThreat, player.worldResources, player.explorationCount, worldEventFactionInfluence);
         setWorldEvent(nextEvent);
         return 0;
       });
     }, 1000);
     return () => window.clearInterval(timer);
-  }, [player.zoneId, player.worldThreat, player.worldResources, player.explorationCount, player.factionStates, worldEvent.duration]);
+  }, [player.zoneId, player.worldThreat, player.worldResources, player.explorationCount, worldEventFactionInfluence, worldEvent.duration]);
 
   useEffect(() => {
     if (!autoMove || !waypoint) return;
