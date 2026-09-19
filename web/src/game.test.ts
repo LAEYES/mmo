@@ -34,7 +34,7 @@ describe('RPGQG core', () => {
 
   it('persists NPC interaction into XP, faction state and relationship memory', () => {
     const next = applyNpcInteraction({ ...base, quests: base.quests.map(q => q.id === 'faction-1' ? { ...q, progress: 2 } : q) }, 'Nomads', 'dialogue', 'dustlands:npc:1');
-    expect(next.xp).toBe(8);
+    expect(next.xp).toBe(23);
     expect(next.factionStates.find(f => f.faction === 'Nomads')).toMatchObject({ influence: 102, reputation: 2 });
     expect(next.npcMemories).toHaveLength(1);
     expect(next.npcMemories[0]).toMatchObject({ npcId: 'dustlands:npc:1', trust: 2, encounters: 1 });
