@@ -203,13 +203,15 @@ function App() {
     const timer = window.setInterval(() => {
       setWorldEventAge(age => {
         if (age + 1 < worldEvent.duration) return age + 1;
-        const nextEvent = generateWorldEvent(currentZone, player.worldThreat, player.worldResources, player.explorationCount, localFaction?.influence ?? 100);
+        const zone = getZone(player.zoneId);
+        const influence = player.factionStates.find(f => f.faction === zone.faction)?.influence ?? 100;
+        const nextEvent = generateWorldEvent(zone, player.worldThreat, player.worldResources, player.explorationCount, influence);
         setWorldEvent(nextEvent);
         return 0;
       });
     }, 1000);
     return () => window.clearInterval(timer);
-  }, [currentZone, player.worldThreat, player.worldResources, player.explorationCount, localFaction?.influence, worldEvent.duration]);
+  }, [player.zoneId, player.worldThreat, player.worldResources, player.explorationCount, player.factionStates, worldEvent.duration]);
 
   useEffect(() => {
     if (!autoMove || !waypoint) return;
