@@ -13,7 +13,7 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
   const baseRef = useRef<HTMLCanvasElement>(null);
   const dynamicRef = useRef<HTMLCanvasElement>(null);
   const position = useRef({ x: 0, y: 0 });
-  const remoteVisuals = useRef<Record<string, { x: number; y: number }>>({});
+  const remoteVisuals = useRef<Record<string, { x: number; y: number; trail: Array<{ x: number; y: number; age: number }> }>>({});
   const remotePlayersRef = useRef(remotePlayers);
   const pathCache = useRef<{ key: string; path: { x: number; y: number }[] }>({ key: '', path: [] });
   const fxTime = useRef(0);
@@ -210,14 +210,32 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
       Object.keys(remoteVisuals.current).forEach(id => { if (!activeIds.has(id)) delete remoteVisuals.current[id]; });
       const smoothing = 1 - Math.exp(-10 * Math.min(50, Math.max(0, deltaMs)) / 1000);
       currentRemotePlayers.forEach(remote=>{
-        const visual = remoteVisuals.current[remote.playerId] ?? (remoteVisuals.current[remote.playerId] = { x: remote.worldTile.x, y: remote.worldTile.y });
+        const visual = remoteVisuals.current[remote.playerId] ?? (remoteVisuals.current[remote.playerId] = { x: remote.worldTile.x, y: remote.worldTile.y, trail: [] });
+        const previousX = visual.x;
+        const previousY = visual.y;
         visual.x += (remote.worldTile.x - visual.x) * smoothing;
         visual.y += (remote.worldTile.y - visual.y) * smoothing;
+        const movementDistance = Math.hypot(visual.x - previousX, visual.y - previousY);
+        if (movementDistance > 0.01) visual.trail.unshift({ x: visual.x, y: visual.y, age: 0 });
+        visual.trail.forEach(point => { point.age += deltaMs; });
+        visual.trail = visual.trail.filter(point => point.age < 360).slice(0, 4);
         const sx=(visual.x-cameraX)*tile+tile/2,sy=(visual.y-cameraY)*tile+tile/2;
         if(sx<-20||sy<-20||sx>rect.width+20||sy>rect.height+20)return;
         const remoteFactionColor = remote.faction === 'Aegis' ? '#8fa9e8' : remote.faction === 'Nomads' ? '#d8b56a' : remote.faction === 'Syndicate' ? '#ad8ee8' : '#8fbfda';
         const remotePulse = 0.5 + 0.5 * Math.sin(fxTime.current / 360 + remote.playerId.length);
         dynamicCtx.save();
+        for (let i = visual.trail.length - 1; i >= 0; i--) {
+          const trail = visual.trail[i];
+          const trailX = (trail.x-cameraX)*tile+tile/2;
+          const trailY = (trail.y-cameraY)*tile+tile/2;
+          if (trailX < -12 || trailY < -12 || trailX > rect.width+12 || trailY > rect.height+12) continue;
+          const trailAlpha = (1 - trail.age / 360) * 0.18;
+          dynamicCtx.globalAlpha = Math.max(0, trailAlpha);
+          dynamicCtx.fillStyle = remoteFactionColor;
+          dynamicCtx.beginPath();
+          dynamicCtx.arc(trailX, trailY, 2.5 - trail.age / 240, 0, Math.PI * 2);
+          dynamicCtx.fill();
+        }
         dynamicCtx.globalAlpha = 0.12 + remotePulse * 0.10;
         dynamicCtx.strokeStyle = remoteFactionColor;
         dynamicCtx.lineWidth = 1.5;
