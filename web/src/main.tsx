@@ -16,6 +16,7 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
   const remoteVisuals = useRef<Record<string, { x: number; y: number }>>({});
   const remotePlayersRef = useRef(remotePlayers);
   const pathCache = useRef<{ key: string; path: { x: number; y: number }[] }>({ key: '', path: [] });
+  const fxTime = useRef(0);
   useEffect(() => { remotePlayersRef.current = remotePlayers; }, [remotePlayers]);
   useEffect(() => {
     position.current = { x: 0, y: 0 };
@@ -74,6 +75,7 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
     let staticKey = '';
     let sceneKey = '';
     const draw = (deltaMs = 16.67) => {
+      fxTime.current += deltaMs;
       const rect = canvas.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
       const pixelWidth = Math.max(1, Math.floor(rect.width * dpr));
@@ -164,6 +166,14 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
         dynamicCtx.fillStyle='#dce7ff';dynamicCtx.font='600 9px Inter,sans-serif';dynamicCtx.fillText(remote.name+' · '+remote.faction,sx+9,sy+3);
       });
       const px=(position.current.x-cameraX)*tile+tile/2, py=(position.current.y-cameraY)*tile+tile/2;
+      const pulse = 0.5 + 0.5 * Math.sin(fxTime.current / 260);
+      dynamicCtx.save();
+      dynamicCtx.globalAlpha = 0.22 + pulse * 0.12;
+      dynamicCtx.strokeStyle = '#9db4e8'; dynamicCtx.lineWidth = 2;
+      dynamicCtx.beginPath(); dynamicCtx.arc(px, py, 13 + pulse * 5, 0, Math.PI * 2); dynamicCtx.stroke();
+      dynamicCtx.globalAlpha = 0.7;
+      dynamicCtx.fillStyle = '#d8e5ff'; dynamicCtx.beginPath(); dynamicCtx.arc(px, py, 2 + pulse * 1.5, 0, Math.PI * 2); dynamicCtx.fill();
+      dynamicCtx.restore();
       dynamicCtx.fillStyle='#fff'; dynamicCtx.beginPath(); dynamicCtx.arc(px,py,9,0,Math.PI*2); dynamicCtx.fill();
       dynamicCtx.strokeStyle='#9db4e8'; dynamicCtx.stroke(); dynamicCtx.fillStyle='#c9d7f5'; dynamicCtx.font='600 11px Inter,sans-serif'; dynamicCtx.fillText('PLAYER',px-22,py+24);
     };
