@@ -12,7 +12,7 @@ type PlayerRow = {
   victories: number; zone_id: string; exploration_count: number; last_discovery: string;
   arena_wins: number; equipped_card_id: string | null; fusion_materials: number;
   world_threat: number; world_resources: number; world_tile: PlayerState['worldTile'];
-  visited_poi_ids: string[]; faction_states: PlayerState['factionStates'];
+  visited_poi_ids: string[]; faction_states: PlayerState['factionStates']; npc_memories: PlayerState['npcMemories'];
   quests: PlayerState['quests']; cards: PlayerState['cards'];
 };
 
@@ -24,7 +24,7 @@ function toRemoteRow(player: PlayerState, id: string): PlayerRow {
     equipped_card_id: player.equippedCardId, fusion_materials: player.fusionMaterials,
     world_threat: player.worldThreat, world_resources: player.worldResources,
     world_tile: player.worldTile, visited_poi_ids: player.visitedPoiIds,
-    faction_states: player.factionStates, quests: player.quests, cards: player.cards,
+    faction_states: player.factionStates, npc_memories: player.npcMemories, quests: player.quests, cards: player.cards,
   };
 }
 
@@ -39,7 +39,7 @@ function fromRemoteRow(row: PlayerRow): PlayerState {
     arenaWins: row.arena_wins, equippedCardId: row.equipped_card_id,
     fusionMaterials: row.fusion_materials, worldThreat: row.world_threat, worldResources: row.world_resources,
     worldTile, visitedPoiIds: row.visited_poi_ids ?? [],
-    factionStates: row.faction_states ?? [], quests: row.quests ?? [], cards: row.cards ?? [],
+    factionStates: row.faction_states ?? [], npcMemories: row.npc_memories ?? [], quests: row.quests ?? [], cards: row.cards ?? [],
   };
 }
 
