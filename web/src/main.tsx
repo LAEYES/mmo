@@ -169,7 +169,7 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
       const pressure = getZoneFactionPressure(zone, factionInfluence);
       const pressureColor = pressure.status === 'dominant' ? 'rgba(120,180,255,.75)' : pressure.status === 'contested' ? 'rgba(220,190,110,.75)' : pressure.status === 'weak' ? 'rgba(230,110,130,.8)' : 'rgba(160,180,210,.65)';
       ctx.strokeStyle=pressureColor;ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.strokeRect(8,8,rect.width-16,rect.height-16);ctx.setLineDash([]);
-      const currentRemotePlayers = remotePlayersRef.current;
+      const currentRemotePlayers = remotePlayersRef.current.filter(isFreshRemotePresence);
       const activeIds = new Set(currentRemotePlayers.map(remote => remote.playerId));
       Object.keys(remoteVisuals.current).forEach(id => { if (!activeIds.has(id)) delete remoteVisuals.current[id]; });
       const smoothing = 1 - Math.exp(-10 * Math.min(50, Math.max(0, deltaMs)) / 1000);
@@ -246,9 +246,11 @@ function App() {
     setPlayer(next);
     savePlayer(next);
   };
+  const isFreshRemotePresence = (entry: ZonePresence) => Date.now() - entry.updatedAt <= 15000;
+
   const upsertRemotePlayer = (entry: ZonePresence) => {
     const id = presencePlayerIdRef.current;
-    if (!id || entry.playerId === id) return;
+    if (!id || entry.playerId === id || !isFreshRemotePresence(entry)) return;
     setRemotePlayers(current => {
       const index = current.findIndex(player => player.playerId === entry.playerId);
       if (index < 0) return [...current, entry];
@@ -266,7 +268,7 @@ function App() {
     let stopped = false;
     let stopPresence: (() => Promise<void>) | null = null;
     const join = async () => {
-      const result = await joinZonePresence(player.zoneId, { playerId: id, name: player.name, zoneId: player.zoneId, worldTile: player.worldTile, faction: player.faction, updatedAt: Date.now() }, { onSync: players => { if (!stopped) setRemotePlayers(players.filter(entry => entry.playerId !== id)); }, onJoin: entry => { if (!stopped) upsertRemotePlayer(entry); }, onLeave: playerId => setRemotePlayers(current => current.filter(entry => entry.playerId !== playerId)) });
+      const result = await joinZonePresence(player.zoneId, { playerId: id, name: player.name, zoneId: player.zoneId, worldTile: player.worldTile, faction: player.faction, updatedAt: Date.now() }, { onSync: players => { if (!stopped) setRemotePlayers(players.filter(entry => entry.playerId !== id && isFreshRemotePresence(entry))); }, onJoin: entry => { if (!stopped) upsertRemotePlayer(entry); }, onLeave: playerId => setRemotePlayers(current => current.filter(entry => entry.playerId !== playerId)) });
       if (stopped) { await result.stop(); return; }
       presenceChannelRef.current = result.channel;
       stopPresence = result.stop;
