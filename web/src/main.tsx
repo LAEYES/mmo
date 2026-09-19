@@ -163,15 +163,19 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
       if(ex>=-40&&ey>=-40&&ex<=rect.width+40&&ey<=rect.height+40){
         const sparkPhase = fxTime.current / 520;
         dynamicCtx.save();
-        for(let i=0;i<6;i++){
-          const angle = sparkPhase * (0.7 + i * 0.08) + i * Math.PI / 3;
-          const radius = 14 + ((sparkPhase * 9 + i * 11) % 22);
+        const sparkCount = Math.max(4, Math.min(10, 4 + worldEvent.intensity * 2));
+        const sparkSpeed = 0.7 + worldEvent.intensity * 0.06;
+        const sparkColor = worldEvent.effect === 'threat' ? '#ef7777' : '#d8b56a';
+        for(let i=0;i<sparkCount;i++){
+          const angle = sparkPhase * (sparkSpeed + i * 0.06) + i * Math.PI * 2 / sparkCount;
+          const radius = 14 + ((sparkPhase * (7 + worldEvent.intensity) + i * 11) % 22);
           const sparkX = ex + Math.cos(angle) * radius;
           const sparkY = ey + Math.sin(angle) * radius;
-          const sparkAlpha = 0.18 + 0.18 * (0.5 + 0.5 * Math.sin(sparkPhase * 2 + i));
-          dynamicCtx.globalAlpha = sparkAlpha;
-          dynamicCtx.fillStyle = worldEvent.effect === 'threat' ? '#ef7777' : '#d8b56a';
-          dynamicCtx.fillRect(sparkX, sparkY, 2, 2);
+          const sparkAlpha = 0.14 + worldEvent.intensity * 0.025 + 0.18 * (0.5 + 0.5 * Math.sin(sparkPhase * 2 + i));
+          dynamicCtx.globalAlpha = Math.min(0.72, sparkAlpha);
+          dynamicCtx.fillStyle = sparkColor;
+          const sparkSize = 1.5 + worldEvent.intensity * 0.12;
+          dynamicCtx.fillRect(sparkX, sparkY, sparkSize, sparkSize);
         }
         dynamicCtx.restore();
         const pulse=0.5+0.5*Math.sin(fxTime.current/320);
