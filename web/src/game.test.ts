@@ -1,35 +1,56 @@
+import { describe, expect, it } from 'vitest';
 import { createStarterPlayer, fuseCards, getCardFusionCost, getNextRarity, isValidPlayerState, normalizePlayer, upgradeCard, type Card } from './game';
 import { generateWorldEvent, getWorldEventPhase, getWorldEventPoint, getWorldEventProgress, zones } from './world';
 
-const assert=(condition:boolean,message:string)=>{if(!condition)throw new Error(message)};
-const base=createStarterPlayer('Test');
-assert(isValidPlayerState(base),'starter state should be valid');
-assert(getNextRarity('Common')==='Rare','common should fuse to rare');
-assert(getNextRarity('Legendary')===null,'legendary should be terminal');
-assert(getCardFusionCost('Common')===2,'common fusion cost');
-const a:Card={id:'a',name:'A',rarity:'Common',power:10,defense:5,vitality:20,xp:50,level:1};
-const b:Card={id:'b',name:'B',rarity:'Common',power:14,defense:7,vitality:30,xp:100,level:2};
-const state={...base,cards:[a,b],fusionMaterials:2,equippedCardId:'a'};
-const fused=fuseCards(state,'a','b');
-assert(fused.cards.length===1,'fusion should consume two cards');
-assert(fused.cards[0].rarity==='Rare','fusion should upgrade rarity');
-assert(fused.fusionMaterials===0,'fusion should consume materials');
-assert(fused.equippedCardId===fused.cards[0].id,'equipped card should transfer');
-assert(fuseCards(state,'a','b').fusionMaterials===0,'funded fusion should be deterministic');
-const blocked=fuseCards({...state,fusionMaterials:1},'a','b');
-assert(blocked.cards.length===2,'underfunded fusion should be blocked');
-const upgraded=upgradeCard(a,100);
-assert(upgraded.level===2&&upgraded.power===13&&upgraded.defense===7&&upgraded.vitality===25,'level-up stats should apply once');
-const legacy=normalizePlayer({...base,cards:[{...a,id:'x'},{...a,id:'x'}]});
-assert(!isValidPlayerState(legacy),'duplicate card ids should be rejected');
-console.log('RPGQG core tests passed');
-const event=generateWorldEvent(zones[0],4,10,2,100);
-assert(getWorldEventPoint(event).x>=4 && getWorldEventPoint(event).x<=55,'event point x should stay in map bounds');
-assert(getWorldEventPoint(event).y>=4 && getWorldEventPoint(event).y<=35,'event point y should stay in map bounds');
-assert(getWorldEventProgress(event,0)===0,'event progress should start at zero');
-assert(getWorldEventProgress(event,event.duration)===100,'event progress should reach one hundred at expiry');
-assert(getWorldEventProgress(event,event.duration+99)===100,'event progress should clamp after expiry');
-const phased={...event,duration:10};
-assert(getWorldEventPhase(phased,1)==='active','event should start active');
-assert(getWorldEventPhase(phased,5)==='urgent','event should become urgent halfway');
-assert(getWorldEventPhase(phased,8)==='expiring','event should become expiring near expiry');
+describe('RPGQG core', () => {
+  const base = createStarterPlayer('Test');
+  const a: Card = { id: 'a', name: 'A', rarity: 'Common', power: 10, defense: 5, vitality: 20, xp: 50, level: 1 };
+  const b: Card = { id: 'b', name: 'B', rarity: 'Common', power: 14, defense: 7, vitality: 30, xp: 100, level: 2 };
+
+  it('validates starter state and rarity progression', () => {
+    expect(isValidPlayerState(base)).toBe(true);
+    expect(getNextRarity('Common')).toBe('Rare');
+    expect(getNextRarity('Legendary')).toBeNull();
+    expect(getCardFusionCost('Common')).toBe(2);
+  });
+
+  it('fuses funded cards and transfers equipment', () => {
+    const fused = fuseCards({ ...base, cards: [a, b], fusionMaterials: 2, equippedCardId: 'a' }, 'a', 'b');
+    expect(fused.cards).toHaveLength(1);
+    expect(fused.cards[0].rarity).toBe('Rare');
+    expect(fused.fusionMaterials).toBe(0);
+    expect(fused.equippedCardId).toBe(fused.cards[0].id);
+  });
+
+  it('blocks underfunded fusion and rejects duplicate ids', () => {
+    expect(fuseCards({ ...base, cards: [a, b], fusionMaterials: 1, equippedCardId: 'a' }, 'a', 'b').cards).toHaveLength(2);
+    const legacy = normalizePlayer({ ...base, cards: [{ ...a, id: 'x' }, { ...a, id: 'x' }] });
+    expect(isValidPlayerState(legacy)).toBe(false);
+  });
+
+  it('applies a single card upgrade', () => {
+    expect(upgradeCard(a, 100)).toMatchObject({ level: 2, power: 13, defense: 7, vitality: 25 });
+  });
+});
+
+describe('world events', () => {
+  it('keeps event points inside map bounds', () => {
+    const event = generateWorldEvent(zones[0], 4, 10, 2, 100);
+    const point = getWorldEventPoint(event);
+    expect(point.x).toBeGreaterThanOrEqual(4);
+    expect(point.x).toBeLessThanOrEqual(55);
+    expect(point.y).toBeGreaterThanOrEqual(4);
+    expect(point.y).toBeLessThanOrEqual(35);
+  });
+
+  it('clamps progress and exposes lifecycle phases', () => {
+    const event = generateWorldEvent(zones[0], 4, 10, 2, 100);
+    expect(getWorldEventProgress(event, 0)).toBe(0);
+    expect(getWorldEventProgress(event, event.duration)).toBe(100);
+    expect(getWorldEventProgress(event, event.duration + 99)).toBe(100);
+    const phased = { ...event, duration: 10 };
+    expect(getWorldEventPhase(phased, 1)).toBe('active');
+    expect(getWorldEventPhase(phased, 5)).toBe('urgent');
+    expect(getWorldEventPhase(phased, 8)).toBe('expiring');
+  });
+});
