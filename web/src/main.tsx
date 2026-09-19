@@ -237,7 +237,7 @@ function App() {
       setPathLength(path.length - 2);
     }, 120);
     return () => window.clearTimeout(timer);
-  }, [autoMove, waypoint, worldTile]);
+  }, [autoMove, waypoint, worldTile, player, currentZone, zoneNpcs, worldEvent]);
 
   useEffect(() => {
     let cancelled = false;
