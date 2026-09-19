@@ -218,8 +218,9 @@ function App() {
       setAutoMove(false);
       setPathLength(0);
       const eventPoint = getWorldEventPoint(worldEvent);
+      const currentPlayer = playerRef.current;
       if (worldTile.x === eventPoint.x && worldTile.y === eventPoint.y) {
-        const next = applyWorldEventState(player, worldEvent.effect, worldEvent.intensity, worldEvent.faction);
+        const next = applyWorldEventState(currentPlayer, worldEvent.effect, worldEvent.intensity, worldEvent.faction);
         update(next);
         setWorldMessage('Territorial event triggered: ' + worldEvent.title);
         setWorldEvent(generateWorldEvent(currentZone, next.worldThreat, next.worldResources, next.explorationCount, next.factionStates.find(f => f.faction === currentZone.faction)?.influence ?? 100));
@@ -234,16 +235,16 @@ function App() {
         if (interaction) {
           setPoiMessage('POI reached: ' + interaction.name);
           setPoiAction(interaction.action);
-          const modifiers = getZoneDynamicModifiers(currentZone, player.worldThreat, player.worldResources, player.factionStates.find(f => f.faction === player.faction)?.influence ?? 100);
-          const next = applyPoiReward(player, interaction.action, { resourceYield: modifiers.resourceYield, encounterChance: modifiers.encounterChance }, currentZone.id + ':' + poi.index);
+          const modifiers = getZoneDynamicModifiers(currentZone, currentPlayer.worldThreat, currentPlayer.worldResources, currentPlayer.factionStates.find(f => f.faction === player.faction)?.influence ?? 100);
+          const next = applyPoiReward(currentPlayer, interaction.action, { resourceYield: modifiers.resourceYield, encounterChance: modifiers.encounterChance }, currentZone.id + ':' + poi.index);
           update(next);
           setScenario(generateScenario(currentZone, next.level, next.explorationCount));
           setWorldEvent(generateWorldEvent(currentZone, next.worldThreat, next.worldResources, next.explorationCount));
           setWorldMessage('POI interaction resolved: ' + interaction.action);
         }
       } else if (npc) {
-        const interaction = interactWithNpc(npc, player.worldThreat, player.worldResources);
-        const next = applyNpcInteraction(player, npc.faction as Faction, interaction.action, npc.id);
+        const interaction = interactWithNpc(npc, currentPlayer.worldThreat, currentPlayer.worldResources);
+        const next = applyNpcInteraction(currentPlayer, npc.faction as Faction, interaction.action, npc.id);
         update(next);
         setWorldMessage('NPC interaction resolved: ' + interaction.message);
         setScenario(generateScenario(currentZone, next.level, next.explorationCount));
@@ -255,7 +256,7 @@ function App() {
     }
     const timer = window.setTimeout(() => {
       setWorldTile(path[1]);
-      update({...player,worldTile:path[1]});
+      persistMovement(path[1]);
       setPathLength(path.length - 2);
     }, 120);
     return () => window.clearTimeout(timer);
