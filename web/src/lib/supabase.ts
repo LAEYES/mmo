@@ -29,12 +29,16 @@ function toRemoteRow(player: PlayerState, id: string): PlayerRow {
 }
 
 function fromRemoteRow(row: PlayerRow): PlayerState {
+  const tile = row.world_tile;
+  const worldTile = tile && Number.isFinite(tile.x) && Number.isFinite(tile.y)
+    ? { x: Math.trunc(tile.x), y: Math.trunc(tile.y) }
+    : { x: 0, y: 0 };
   return {
     name: row.name, level: row.level, xp: row.xp, faction: row.faction, victories: row.victories,
     zoneId: row.zone_id, explorationCount: row.exploration_count, lastDiscovery: row.last_discovery,
     arenaWins: row.arena_wins, equippedCardId: row.equipped_card_id,
     fusionMaterials: row.fusion_materials, worldThreat: row.world_threat, worldResources: row.world_resources,
-    worldTile: row.world_tile ?? { x: 0, y: 0 }, visitedPoiIds: row.visited_poi_ids ?? [],
+    worldTile, visitedPoiIds: row.visited_poi_ids ?? [],
     factionStates: row.faction_states ?? [], quests: row.quests ?? [], cards: row.cards ?? [],
   };
 }
