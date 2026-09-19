@@ -18,8 +18,12 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
   const pathCache = useRef<{ key: string; path: { x: number; y: number }[] }>({ key: '', path: [] });
   const fxTime = useRef(0);
   const worldEventAgeRef = useRef(worldEventAge);
+  const ambientWeatherRef = useRef<ReturnType<typeof getZoneEnvironment>['weather']>(getZoneEnvironment(getZone(zoneId), worldThreat, worldResources, explorationCount).weather);
   useEffect(() => { remotePlayersRef.current = remotePlayers; }, [remotePlayers]);
   useEffect(() => { worldEventAgeRef.current = worldEventAge; }, [worldEventAge]);
+  useEffect(() => {
+    ambientWeatherRef.current = getZoneEnvironment(getZone(zoneId), worldThreat, worldResources, explorationCount).weather;
+  }, [zoneId, worldThreat, worldResources, explorationCount]);
   useEffect(() => {
     position.current = { x: 0, y: 0 };
   }, [zoneId]);
@@ -211,7 +215,7 @@ function WorldCanvas({ zoneId, waypoint, worldTile, worldThreat, worldResources,
         dynamicCtx.fillStyle='#dce7ff';dynamicCtx.font='600 9px Inter,sans-serif';dynamicCtx.fillText(remote.name+' · '+remote.faction,sx+9,sy+3);
       });
       const ambientPhase = fxTime.current / 1800;
-      const ambientWeather = getZoneEnvironment(getZone(zoneId), worldThreat, worldResources, explorationCount).weather;
+      const ambientWeather = ambientWeatherRef.current;
       const ambientCount = ambientWeather === 'storm' ? 16 : ambientWeather === 'mist' ? 13 : ambientWeather === 'frost' ? 12 : 10;
       for(let i=0;i<ambientCount;i++){
         const ax=((i*83 + Math.floor(ambientPhase*12)*17)%(rect.width+80))-40;
