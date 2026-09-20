@@ -46,5 +46,5 @@ jobs:
           protocol: ftp
           port: 21
           local-dir: ./web/dist/
-          server-dir: /public_html/
+          server-dir: /
           dangerous-clean-slate: false
